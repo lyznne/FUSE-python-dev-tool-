@@ -1,0 +1,116 @@
+site_name: FUSE - Python Dev Tool
+site_description: Live Python Dev Server + UI + Logs + Framework-aware CLI
+site_url: https://fusetools.dev
+repo_url: https://github.com/your-org/python-dev-tool
+repo_name: fuse/python-dev-tool
+
+theme:
+  name: material
+  language: en
+  favicon: assets/images/favicon.ico
+  logo: assets/images/fuse-logo.svg
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - toc.integrate
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - search.highlight
+    - search.share
+    - content.action.edit
+    - content.action.view
+    - navigation.footer
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: amber
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - tables
+  - attr_list
+  - def_list
+  - footnotes
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      linenums: true
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.snippets
+  - pymdownx.keys
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.copybutton
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      fallback_to_build_date: true
+      locale: en
+  - awesome-pages
+  - minify:
+      minify_html: true
+  - markdownextradata
+  - glightbox
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/your-org/python-dev-tool
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/yourproject
+  generator: false
+
+nav:
+  - Home: index.md
+
+  - Guides:
+      - Installation: guides/installation.md
+      - Getting Started: guides/getting-started.md
+      - Framework Integration: guides/framework-integration.md
+      - Deployment: guides/deployment.md
+      - Troubleshooting: guides/troubleshooting.md
+
+  - API Reference:
+      - Core Engine: api/core.md
+      - CLI: api/cli.md
+      - Web Interface: api/web.md
+      - Plugin System: api/plugins.md
+
+  - Development:
+      - Setup & Env: development/setup.md
+      - Architecture: development/architecture.md
+      - Testing Strategy: development/testing.md
+      - Contributing: development/contributing.md
+
+  - Examples:
+      - Django App: examples/django-example.md
+      - Flask API: examples/flask-example.md
+      - FastAPI Service: examples/fastapi-example.md
+      - Streamlit Dashboard: examples/streamlit-example.md
+      - Multi-framework Stack: examples/multi-framework.md
+
+  - License: license.md
+  - Changelog: changelog.md
