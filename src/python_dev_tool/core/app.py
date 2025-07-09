@@ -6,33 +6,22 @@ app.py - Core App
 # sys imports
 import asyncio
 import signal
-import sys
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable, Union
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from datetime import datetime
-import json
 import webbrowser
 import threading
 import time
 import traceback
-import os
 
 # 3rd party imports
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
-from rich.progress import (
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    BarColumn,
-    TaskProgressColumn,
-)
 from rich.layout import Layout
 from rich.text import Text
-from rich import print as rprint
 
 # local imports
 from python_dev_tool.core.config import Config
@@ -42,7 +31,7 @@ from python_dev_tool.core.framework_detector import FrameworkDetector
 from python_dev_tool.core.server import DevelopmentServer
 from python_dev_tool.core.logger import DevToolLogger
 from python_dev_tool.core.events import EventEmitter
-from python_dev_tool.core.exceptions import DevToolError, FrameworkNotFoundError
+from python_dev_tool.core.exceptions import FrameworkNotFoundError
 from python_dev_tool.web.app import create_web_app
 from python_dev_tool.monitoring.metrics import MetricsCollector
 from python_dev_tool.monitoring.health import HealthChecker

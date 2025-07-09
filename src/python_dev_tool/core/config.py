@@ -5,59 +5,84 @@ config.py - Config File
 
 # sys imports
 from ctypes.macholib import framework
-from logging import _Level
-from nt import environ
 import os
-import json
 import toml
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Union
-from pydantic import BaseModel, Field, validator
+from typing import Dict, Any, Optional, List
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings
-
+from pydantic import ConfigDict
 
 # local imports
 from .exceptions import ConfigError
-from python_dev_tool.core.globals import APP_HOST, APP_LOG_LEVEL, APP_PORT, APP_TIMEOUT, APP_UI_PORT, APP_WORKERS, FUSE_CONFIG_FILE, LOG_BACKUP_COUNT, LOG_FILE_ENABLED, LOG_FILE_PATH, LOG_FORMAT, LOG_LEVEL, LOG_MAX_FILE_SIZE, SUPPORTED_FRAMEWORKS
+from python_dev_tool.core.globals import (
+    APP_HOST,
+    APP_LOG_LEVEL,
+    APP_PORT,
+    APP_TIMEOUT,
+    APP_UI_PORT,
+    APP_WORKERS,
+    FRAMEWORK,
+    FUSE_CONFIG_FILE,
+    LOG_BACKUP_COUNT,
+    LOG_FILE_ENABLED,
+    LOG_FILE_PATH,
+    LOG_FORMAT,
+    LOG_LEVEL,
+    LOG_MAX_FILE_SIZE,
+    PROJECT_NAME,
+    PROJECT_ROOT,
+    PYTHON_VERSION,
+    SUPPORTED_FRAMEWORKS,
+)
 
 
 class ServerConfig(BaseModel):
     """Server configuration."""
-    host: str  = APP_HOST
-    port: int  = APP_PORT
+
+    host: str = APP_HOST
+    port: int = APP_PORT
     auto_reload: bool = True
     show_logs: bool = True
     log_level: str = APP_LOG_LEVEL
     workers: int = APP_WORKERS
     timeout: int = APP_TIMEOUT
 
+
 class DashboardConfig(BaseModel):
     """Dashboard configuration."""
+
     enabled: bool = True
     host: str = APP_HOST
     port: int = APP_UI_PORT
     auto_open: bool = True
     theme: str = "dark"
 
-    @validator("theme")
+    @field_validator("theme")
+    @classmethod
     def validate_theme(cls, value):
         """Validate theme."""
         if value not in ["dark", "light"]:
             raise ValueError("Invalid theme")
         return value
 
+
 class DatabaseConfig(BaseModel):
     """Database configuration."""
+
     pass
+
 
 class SecurityConfig(BaseModel):
     """Security configuration."""
-    secret_key: str  = Field(default_factory=lambda: os.urandom(32).hex())
-    algorithm: str  =  "HS256"
+
+    secret_key: str = Field(default_factory=lambda: os.urandom(32).hex())
+    algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     allowed_host: List[str] = ["localhost", "127.0.0.1"]
     allowed_origin: List[str] = ["*"]
     # cors_origins: List[str] = ["http://localhost:3000"]
+
 
 class DeploymentConfig(BaseModel):
     """Deployment configuration."""
@@ -67,6 +92,7 @@ class DeploymentConfig(BaseModel):
     health_check_enabled: bool = True
     rollback_enabled: bool = True
     timeout: int = 300
+
 
 class LoggingConfig(BaseModel):
     """Logging configuration."""
@@ -83,10 +109,10 @@ class DevToolConfig(BaseSettings):
     """Main configuration class of FUSE."""
 
     # project settings
-    project_name: str = "my project"
-    project_root: Path = "."
-    framework: Optional[str] = None
-    python_version: str = "3.10"
+    project_name: str = PROJECT_NAME
+    project_root: Path = PROJECT_ROOT
+    framework: Optional[str] = FRAMEWORK
+    python_version: str = PYTHON_VERSION
 
     # Components settings
     server: ServerConfig = Field(default_factory=ServerConfig)
@@ -97,61 +123,65 @@ class DevToolConfig(BaseSettings):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
 
     # Commands
-    commands: Dict[str, str]  = Field(default_factory=dict)
+    commands: Dict[str, str] = Field(default_factory=dict)
 
     # Environment variables
-    environment: Dict[str, str]  = Field(default_factory=dict)
+    environment: Dict[str, str] = Field(default_factory=dict)
 
     # Plugin settings
-    plugins: List[str]  = Field(default_factory=dict)
+    plugins: List[str] = Field(default_factory=dict)
 
     # Development settings
     debug: bool = False
-    tetsing: bool = False
+    testing: bool = False
 
-    class Config:
-        env_prefix = "FUSE_"
-        env_nested_delimiter = "__"
-        case_sensitive = False
-        extra = "allow"
+    model_config = ConfigDict(
+        env_prefix="FUSE_",
+        env_nested_delimiter="__",
+        case_sensitive=False,
+        extra="allow",
+    )
 
-        @validator(framework)
-        def validate_framework(cls, v):
-            """Validate framework."""
+    @field_validator("framework")
+    @classmethod
+    def validate_framework(cls, v):
+        """Validate framework."""
 
-            if v is not None:
-                supported_frameworks = SUPPORTED_FRAMEWORKS
-                if v.lower() not in supported_frameworks:
-                    raise ValueError(f"Invalid framework: {v}")
+        if v is not None:
+            supported_frameworks = SUPPORTED_FRAMEWORKS
+            if v.lower() not in supported_frameworks:
+                raise ValueError(f"Invalid framework: {v}")
 
-            return v
+        return v
 
-        @validator("server")
-        def validate_server(cls, v):
-            """Validate server settings."""
-            if v.port < 1024 or v.port > 65535:
-                raise ValueError("Invalid port number (must be between 1024 and 65535)")
-            return v
+    @field_validator("server")
+    @classmethod
+    def validate_server(cls, v):
+        """Validate server settings."""
+        if v.port < 1024 or v.port > 65535:
+            raise ValueError("Invalid port number (must be between 1024 and 65535)")
+        return v
 
-        @validator("dashboard")
-        def validate_dashboard(cls, v):
-            """Validate dashboard settings."""
-            if v.port < 1024 or v.port > 65535:
-                raise ValueError("Invalid port number (must be between 1024 and 65535)")
-            return v
+    @field_validator("dashboard")
+    @classmethod
+    def validate_dashboard(cls, v):
+        """Validate dashboard settings."""
+        if v.port < 1024 or v.port > 65535:
+            raise ValueError("Invalid port number (must be between 1024 and 65535)")
+        return v
 
 
-class Config:
+class Config: # class name ConfigManager
     """Configuration manager."""
 
     def __init__(self, config_path: Optional[Path] = None):
-        self.config_path  =  config_path or self.__find_config_file()
+        self.config_path = config_path or self.__find_config_file()
         self._config: Optional[DevToolConfig] = None
         self._load_config()
 
     def __find_config_file(self) -> Optional[Path]:
         """Find configuration in the project hierachy."""
-        current_dir  = Path.cwd()
+        current_dir = Path.cwd()
 
         # look for config files in order of preference
         config_files = [
@@ -212,7 +242,7 @@ class Config:
     def update(self, **kwargs: Any) -> None:
         """Update configuration values."""
         if self._config is None:
-            self._config  = DevToolConfig(**kwargs)
+            self._config = DevToolConfig(**kwargs)
         else:
             for key, value in kwargs.items():
                 if hasattr(self._config, key):
@@ -223,8 +253,8 @@ class Config:
         if self._config is None:
             return
 
-        save_path  =  Path or self.config_path
-        if save_path  is None:
+        save_path = Path or self.config_path
+        if save_path is None:
             save_path = Path(FUSE_CONFIG_FILE)
 
         # create dir if not exists
@@ -241,11 +271,31 @@ class Config:
     def config(self) -> DevToolConfig:
         """Get configuration object."""
         if self._config is None:
-            self._load_config =  DevToolConfig()
+            self._load_config = DevToolConfig()
         return self._config
 
     def reload(self) -> None:
         """Reload configuration from file."""
         self._load_config()
 
+    def _apply_auto_detection(self, config: DevToolConfig) -> DeploymentConfig:
+        """Apply auto-detection to fill in missing values."""
+        # detector = ProjectDetector(self.project_path)
 
+        # # Auto-detect framework if not set
+        # if not config.framework:
+        #     config.framework = detector.detect_framework()
+
+        # # Auto-detect project name if not set
+        # if not config.name:
+        #     config.name = detector.detect_project_name()
+
+        # # Auto-detect commands if not set
+        # if not config.commands.dev:
+        #     config.commands = detector.detect_commands(config.framework)
+
+        # # Auto-detect virtual environment
+        # if not config.virtual_env:
+        #     config.virtual_env = detector.detect_virtual_env()
+
+        return config

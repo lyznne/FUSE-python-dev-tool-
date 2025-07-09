@@ -24,6 +24,13 @@ LOG_MAX_FILE_SIZE  =  10 * 1024 * 1024,  # 10MB
 LOG_BACKUP_COUNT   =  5,
 
 
+# Config -  project settings\
+PROJECT_NAME       =  "my project",
+PROJECT_ROOT       =  ".",
+FRAMEWORK          =  None,
+PYTHON_VERSION     =  "3.13",
+
+
 # suppported frameworks
 SUPPORTED_FRAMEWORKS = [
     "django",
