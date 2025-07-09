@@ -1,12 +1,18 @@
 site_name: FUSE - Python Dev Tool
 site_description: Live Python Dev Server + UI + Logs + Framework-aware CLI
-site_url: https://fusetools.dev
-repo_url: https://github.com/your-org/python-dev-tool
-repo_name: fuse/python-dev-tool
+site_url: https://github.com/lyznne/FUSE-python-dev-tool-
+site_author: lyznne
+
+repo_url: https://github.com/lyznne/FUSE-python-dev-tool-
+repo_name: FUSE-python-dev-tool-
+edit_uri: edit/main/docs/
+
 
 theme:
   name: material
   language: en
+  user_color_mode_toggle: true # Dark mode toggle
+
   favicon: assets/images/favicon.ico
   logo: assets/images/fuse-logo.svg
   features:
@@ -24,15 +30,21 @@ theme:
     - content.action.view
     - navigation.footer
   palette:
-    - scheme: default
-      primary: deep purple
-      accent: amber
-    - scheme: slate
-      primary: deep purple
-      accent: amber
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
+      # Light mode (default)
+      - scheme: default
+        primary: green  # or "emerald" (Material v9+)
+        accent: teal    # or "light green" for a brighter accent
+        toggle:
+          icon: material/weather-night
+          name: Switch to dark mode
+
+      # Dark mode (slate)
+      - scheme: slate
+        primary: green  # or "deep green"
+        accent: teal    # or "lime" for contrast
+        toggle:
+          icon: material/weather-sunnyce 
+          name: Switch to light mode
   font:
     text: Inter
     code: JetBrains Mono
@@ -58,11 +70,10 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.keys
   - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.tasklist:
       custom_checkbox: true
-  - pymdownx.copybutton
 
 plugins:
   - search
@@ -72,7 +83,6 @@ plugins:
   - awesome-pages
   - minify:
       minify_html: true
-  - markdownextradata
   - glightbox
 
 extra:

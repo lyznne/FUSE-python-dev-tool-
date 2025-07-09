@@ -1,0 +1,66 @@
+# === General text settings ===
+* text=auto eol=lf
+
+# === Normalize specific file types ===
+*.py text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+*.ini text eol=lf
+*.txt text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+
+# === Treat images and binaries as binary ===
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.eot binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.mp4 binary
+*.webm binary
+*.mov binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.7z binary
+
+# === GitHub Linguist overrides (optional) ===
+# Don't count frontend `dist/` in language stats
+/frontend/dist/* linguist-vendored
+
+# Docs and config shouldn't affect language statistics
+/docs/** linguist-documentation
+*.yml linguist-detectable=true
+*.toml linguist-detectable=true
+
+# === Diff settings ===
+*.lock -diff
+*.min.js -diff
+*.min.css -diff
+*.map -diff
+*.pyc -diff
+
+# === Line endings for Windows shell scripts ===
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# === Ignore merge conflicts in lock files ===
+package-lock.json merge=union
+poetry.lock merge=union
+Pipfile.lock merge=union
