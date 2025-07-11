@@ -464,3 +464,4 @@ class HotReloader(EventEmitter):
     def list_active_projects(self) -> List[str]:
         """List active project IDs"""
         return list(self.active_projects.keys())
+    

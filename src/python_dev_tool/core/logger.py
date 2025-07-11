@@ -391,3 +391,29 @@ async def stream_project_logs(project_id: str) -> AsyncGenerator[LogEntry, None]
     """Stream logs for project"""
     async for entry in get_log_manager(project_id).stream_logs():
         yield entry
+
+
+class DevToolLogger:
+    """Simplified logger interface for the dev tool"""
+
+    def __init__(self, project_id: str = "default", name: str = "main"):
+        self.manager = get_log_manager(project_id)
+        self.logger = self.manager.get_structured_logger(name)
+
+    def debug(self, message: str, **kwargs):
+        self.logger.debug(message, **kwargs)
+
+    def info(self, message: str, **kwargs):
+        self.logger.info(message, **kwargs)
+
+    def warning(self, message: str, **kwargs):
+        self.logger.warning(message, **kwargs)
+
+    def error(self, message: str, **kwargs):
+        self.logger.error(message, **kwargs)
+
+    def critical(self, message: str, **kwargs):
+        self.logger.critical(message, **kwargs)
+
+
+

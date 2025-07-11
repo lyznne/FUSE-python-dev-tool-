@@ -12,8 +12,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional
 import socket
-
+import signal
 from python_dev_tool.core.events import EventBus, EventType, EventEmitter
+from python_dev_tool.core.exceptions import ServerError
 from python_dev_tool.core.file_watcher import HotReloader
 from python_dev_tool.core.process_manager import ProcessManager
 
@@ -465,3 +466,184 @@ class DevelopmentServer(EventEmitter):
         )
 
         # For now, just restart the server
+        # For frameworks that support in-process reloading
+        if self.framework in ("flask", "django", "fastapi"):
+            try:
+                # Send reload signal to the process
+                if self.process and self.process.poll() is None:
+                    if sys.platform == "win32":
+                        # Windows doesn't support SIGUSR1
+                        return await self.restart()
+                    else:
+                        self.process.send_signal(signal.SIGUSR1)
+                        self.state = ServerState.RUNNING
+                        await self.emit(
+                            EventType.SERVER_RELOADED,
+                            {"server_id": self.server_id, "state": self.state.value},
+                        )
+                        return True
+            except Exception as e:
+                return await self.restart()
+
+        # Fall back to full restart for other frameworks
+        return await self.restart()
+
+    async def _handle_reload_event(self, data: dict) -> None:
+        """Handle file change events for hot reloading"""
+        if self.state == ServerState.RUNNING and self.config.auto_reload:
+            await self.reload()
+
+    async def _wait_for_ready(self, timeout: int = 30) -> None:
+        """Wait for server to become ready"""
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            if self.framework_server.is_ready():
+                return
+            await asyncio.sleep(0.5)
+
+        if self.process and self.process.poll() is not None:
+            output = self.process.stdout.read() if self.process.stdout else ""
+            raise ServerError(f"Server failed to start:\n{output}")
+        raise ServerError("Server failed to become ready")
+
+    async def _wait_for_process_exit(self) -> None:
+        """Wait for process to exit"""
+        while self.process and self.process.poll() is None:
+            await asyncio.sleep(0.1)
+
+    async def _monitor_process(self) -> None:
+        """Monitor the server process for crashes"""
+        try:
+            while True:
+                if self.process is None:
+                    break
+
+                # Check if process died
+                if self.process.poll() is not None:
+                    output = self.process.stdout.read() if self.process.stdout else ""
+                    self.state = ServerState.ERROR
+                    await self.emit(
+                        EventType.SERVER_STOPPED,
+                        {
+                            "server_id": self.server_id,
+                            "state": self.state.value,
+                            "error": f"Process crashed with return code {self.process.returncode}\n{output}",
+                        },
+                    )
+                    break
+
+                await asyncio.sleep(1)
+
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            self.state = ServerState.ERROR
+            await self.emit(
+                EventType.SERVER_STOPPED,
+                {
+                    "server_id": self.server_id,
+                    "state": self.state.value,
+                    "error": str(e),
+                },
+            )
+
+    def get_server_info(self) -> ServerInfo:
+        """Get current server information"""
+        return ServerInfo(
+            server_id=self.server_id,
+            project_path=self.project_path,
+            framework=self.framework,
+            config=self.config,
+            state=self.state,
+            pid=self.process.pid if self.process else None,
+            url=self.framework_server.get_url()
+            if self.state == ServerState.RUNNING
+            else None,
+            start_time=getattr(self.process, "start_time", None)
+            if self.process
+            else None,
+            last_reload=getattr(self, "_last_reload_time", None),
+            error_message=getattr(self, "_last_error", None),
+        )
+
+    async def __aenter__(self):
+        await self.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.stop()
+
+
+class ServerManager:
+    """Manages multiple development servers"""
+
+    def __init__(self, event_bus: EventBus = None):
+        self.event_bus = event_bus or EventBus()
+        self.servers: Dict[str, DevelopmentServer] = {}
+        self.process_manager = ProcessManager()
+        self.hot_reloader = HotReloader(event_bus)
+
+    async def start_server(
+        self, project_path: str, framework: str, config: Optional[ServerConfig] = None
+    ) -> str:
+        """Start a new development server"""
+        config = config or ServerConfig()
+        server = DevelopmentServer(
+            project_path=project_path,
+            framework=framework,
+            config=config,
+            event_bus=self.event_bus,
+            process_manager=self.process_manager,
+            hot_reloader=self.hot_reloader,
+        )
+
+        server_id = server.server_id
+        self.servers[server_id] = server
+
+        if not await server.start():
+            del self.servers[server_id]
+            raise ServerError("Failed to start server")
+
+        return server_id
+
+    async def stop_server(self, server_id: str) -> bool:
+        """Stop a running server"""
+        server = self.servers.get(server_id)
+        if not server:
+            return False
+
+        result = await server.stop()
+        if result:
+            del self.servers[server_id]
+
+        return result
+
+    async def restart_server(self, server_id: str) -> bool:
+        """Restart a server"""
+        server = self.servers.get(server_id)
+        if not server:
+            return False
+
+        return await server.restart()
+
+    async def reload_server(self, server_id: str) -> bool:
+        """Reload a server"""
+        server = self.servers.get(server_id)
+        if not server:
+            return False
+
+        return await server.reload()
+
+    def get_server_info(self, server_id: str) -> Optional[ServerInfo]:
+        """Get server information"""
+        server = self.servers.get(server_id)
+        return server.get_server_info() if server else None
+
+    def list_servers(self) -> List[ServerInfo]:
+        """List all running servers"""
+        return [server.get_server_info() for server in self.servers.values()]
+
+    async def stop_all(self) -> None:
+        """Stop all running servers"""
+        for server_id in list(self.servers.keys()):
+            await self.stop_server(server_id)

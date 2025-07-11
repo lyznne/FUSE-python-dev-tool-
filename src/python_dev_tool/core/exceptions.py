@@ -54,4 +54,27 @@ class NetworkError(DevToolError):
         self.port = port
 
 
-# ---
+class ServerError(DevToolError):
+    """Raised when there's an error with server-related operations."""
+
+    def __init__(self, message: str, server_id: Optional[str] = None):
+        super().__init__(message)
+        self.server_id = server_id
+        self.message = message or {}
+
+
+class  FrameworkNotFoundError(DevToolError):
+    """Raised when a framework is not found."""
+
+    def __init__(self, framework: str):
+        super().__init__(f"Framework {framework}  not found or not supported")
+        self.framework = framework
+
+
+class ProjectError(DevToolError):
+    """Raised when there's an error with project-related operations."""
+
+    def __init__(self, message: str, project_id: Optional[str] = None):
+        super().__init__(message)
+        self.project_id = project_id
+        
