@@ -5,23 +5,25 @@ CLI Commands - Dev Command
 
 # sys imports
 import sys
+import os
 import asyncio
 from pathlib import Path
 from dataclasses import dataclass
+from typing import Optional
 
 # 3rd party imports
 from rich.console import Console
 from rich.table import Table
 
 # local imports
+from python_dev_tool.core.events import EventBus
 from python_dev_tool.core.exceptions import DevToolError
 from python_dev_tool.core.globals import APP_HOST, APP_OPEN_BROWSER, APP_PORT, APP_UI_PORT
 from python_dev_tool.core.process_manager import ProcessManager
 from python_dev_tool.core.file_watcher import FileWatcher
 from python_dev_tool.core.framework_detector import FrameworkDetector
-from python_dev_tool.web.app import create_dev_ui_app
-from python_dev_tool.utils.network_utils import find_free_port, check_port_available
-
+from python_dev_tool.web.app import   create_dev_ui_app
+from python_dev_tool.utils.network_utils import NetworkUtils
 
 @dataclass
 class DevOptions:
@@ -48,18 +50,26 @@ class DevCommand:
         reload: bool = True,
         ui_port: int = APP_UI_PORT,
         open_browser: bool = APP_OPEN_BROWSER,
+        event_bus: Optional[EventBus] = None,
     ):
+
+        def _unwrap(value, fallback=None):
+            """Unwraps a value or returns a fallback."""
+            if isinstance(value, (tuple,list)):
+                return value[0] if value else fallback
+            return value
+
         self.options = DevOptions(
             project_path=project_path,
-            port=port,
-            host=host,
+            port=_unwrap(port, APP_PORT),
+            host=_unwrap(host, APP_HOST),
             debug=debug,
             reload=reload,
-            ui_port=ui_port,
-            open_browser=open_browser,
+            ui_port=_unwrap(ui_port, APP_UI_PORT),
+            open_browser=_unwrap(open_browser, APP_OPEN_BROWSER),
         )
         self.console = Console()
-        self.process_manager = ProcessManager()
+        self.process_manager = ProcessManager(event_bus or EventBus())
         self.file_watcher = None
         self.dev_ui_process = None
         self.app_process = None
@@ -110,39 +120,121 @@ class DevCommand:
             )
 
         # Check if ports are available
-        if not check_port_available(self.options.host, self.options.port):
-            new_port = find_free_port(self.options.host, start_port=self.options.port)
+        if not NetworkUtils.check_port_available(self.options.host, self.options.port):
+            new_port = NetworkUtils.find_free_port(self.options.host, start_port=self.options.port)
             self.console.print(f"[yellow]Port {self.options.port} is busy, using {new_port}[/yellow]")
             self.options.port = new_port
 
-        if not check_port_available(self.options.host, self.options.ui_port):
-            new_ui_port = find_free_port(self.options.host, start_port=self.options.ui_port)
+        if not NetworkUtils.check_port_available(
+            self.options.host, self.options.ui_port
+        ):
+            new_ui_port = NetworkUtils.find_free_port(
+                self.options.host, start_port=self.options.ui_port
+            )
             self.console.print(f"[yellow]UI port {self.options.ui_port} is busy, using {new_ui_port}[/yellow]")
             self.options.ui_port = new_ui_port
+
+    # async def _start_dev_ui(self) -> None:
+    #     """Start the development UI server."""
+    #     try:
+    #         self.console.print("[blue]Starting development UI...[/blue]")
+
+    #         def _unwrap(value, fallback=None):
+    #             """Unwraps a value or returns a fallback."""
+    #             if isinstance(value, (tuple,list)):
+    #                 return value[0] if value else fallback
+    #             return value
+
+    #         # Ensure UI port is an integer and within valid range
+    #         try:
+    #             self.options.ui_port = int(_unwrap(self.options.ui_port, APP_UI_PORT))
+    #         except Exception as e:
+    #             raise DevToolError(f"Invalid UI port: {self.options.ui_port} ({e})")
+
+
+    #         if self.options.ui_port < 1024 or self.options.ui_port > 65535:
+    #             self.options.ui_port = NetworkUtils.find_free_port(self.options.host)
+
+    #         # Create FastAPI app for dev UI
+    #         create_dev_ui_app(self.options.project_path)
+
+    #         # Start UI server in separate process
+    #         ui_command = [
+    #             sys.executable, "-m", "uvicorn",
+    #             "python_dev_tool.web.app:create_dev_ui_app",
+    #             "--host", self.options.host,
+    #             "--port", str(self.options.ui_port),
+    #             "--reload" if self.options.debug else "--no-reload",
+    #             "--app-dir", str(self.options.project_path),
+    #         ]
+
+    #         self.dev_ui_process = await asyncio.create_subprocess_exec(
+    #             *ui_command,
+    #             cwd=self.options.project_path,
+    #             stdout=asyncio.subprocess.PIPE,
+    #             stderr=asyncio.subprocess.STDOUT,
+    #         )
+
+    #         # Wait for UI to start
+    #         await asyncio.sleep(2)
+
+    #         self.console.print("[green]✓ Development UI started[/green]")
+
+    #     except Exception as e:
+    #         raise DevToolError(f"Failed to start development UI: {e}")
+
 
     async def _start_dev_ui(self) -> None:
         """Start the development UI server."""
         try:
             self.console.print("[blue]Starting development UI...[/blue]")
 
-            # Create FastAPI app for dev UI
-            create_dev_ui_app(self.options.project_path)
+            def _unwrap(value, fallback=None):
+                """Unwraps a value or returns a fallback."""
+                if isinstance(value, (tuple, list)):
+                    return value[0] if value else fallback
+                return value
 
-            # Start UI server in separate process
+            # Ensure UI port is an integer and within valid range
+            try:
+                self.options.ui_port = int(_unwrap(self.options.ui_port, APP_UI_PORT))
+            except Exception as e:
+                raise DevToolError(f"Invalid UI port: {self.options.ui_port} ({e})")
+
+            if self.options.ui_port < 1024 or self.options.ui_port > 65535:
+                self.options.ui_port = NetworkUtils.find_free_port(self.options.host)
+
+            # Test that the app can be created (don't store it, just validate)
+            try:
+                test_app = create_dev_ui_app(self.options.project_path)
+                # If we get here, the app creation works
+            except Exception as e:
+                raise DevToolError(f"Failed to create dev UI app: {e}")
+
+            # Start UI server in separate process using the factory function
             ui_command = [
-                sys.executable, "-m", "uvicorn",
+                sys.executable,
+                "-m",
+                "uvicorn",
                 "python_dev_tool.web.app:create_dev_ui_app",
-                "--host", self.options.host,
-                "--port", str(self.options.ui_port),
+                "--host",
+                self.options.host,
+                "--port",
+                str(self.options.ui_port),
                 "--reload" if self.options.debug else "--no-reload",
-                "--app-dir", str(self.options.project_path),
+                "--factory",  # Important: tells uvicorn to call the function
             ]
+
+            # Set environment variable for project path
+            env = os.environ.copy()
+            env["DEVTOOL_PROJECT_PATH"] = str(self.options.project_path)
 
             self.dev_ui_process = await asyncio.create_subprocess_exec(
                 *ui_command,
                 cwd=self.options.project_path,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
+                env=env,
             )
 
             # Wait for UI to start

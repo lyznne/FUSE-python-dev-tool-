@@ -11,8 +11,10 @@ from pydantic import BaseModel, Field
 import logging
 from datetime import datetime
 
-from python_dev_tool.web.services.process_service import ProcessService, get_process_service
-from python_dev_tool.web.models import ProcessCreate, ProcessUpdate, ProcessStatus, ProcessMetrics
+from python_dev_tool.web.models.process import ProcessStatus,  ProcessCreate, ProcessUpdate
+from python_dev_tool.web.services.process_service import ProcessMetrics, ProcessService, get_process_service
+
+
 logger = logging.getLogger(__name__)
 router = APIRouter()
 

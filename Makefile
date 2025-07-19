@@ -34,7 +34,7 @@ EMOJI_CLEAN       := 🧹
 EMOJI_SUCCESS     := ✅
 EMOJI_ERROR       := ❌
 EMOJI_WARNING     := ⚠️
-
+EMOJI_PUBLISH     := 📦
 
 # Simple ASCII alternatives
 # EMOJI_ROCKET      := [*]
@@ -44,6 +44,11 @@ EMOJI_WARNING     := ⚠️
 # EMOJI_BUILD       := [#]
 # EMOJI_SUCCESS     := [✓]
 # EMOJI_ERROR       := [✗]
+
+# Default variables
+PORT ?= 8000
+TEST_FILE ?= tests/
+SCRIPT_FILE ?= scripts/
 
 
 ## Default target
@@ -66,19 +71,25 @@ help:
 
 	@echo -e "$(BOLD)$(EMERALD)[ Testing & QA ]$(RESET)"
 	@echo -e "  $(CRIMSON)make test$(RESET)           $(EMOJI_TEST) Run unit + integration tests"
-	@echo -e "  $(CRIMSON)make lint$(RESET)           $(EMOJI_LINT) Run flake8 + mypy"
-	@echo -e "  $(CRIMSON)make format$(RESET)         $(EMOJI_FORMAT) Auto-format using black"
+	@echo -e "  $(CRIMSON)make test TEST_FILE=path$(RESET) $(EMOJI_TEST) Run specific test file"
+	@echo -e "  $(CRIMSON)make lint$(RESET)           $(EMOJI_LINT) Run ruff linter + type check"
+	@echo -e "  $(CRIMSON)make format$(RESET)         $(EMOJI_FORMAT) Auto-format using ruff"
 
 	@echo -e "$(BOLD)$(EMERALD)[ Deploy & Docs ]$(RESET)"
 	@echo -e "  $(PURPLE)make deploy$(RESET)          $(EMOJI_DEPLOY) Deploy to configured platform"
-	@echo -e "  $(BLUE)make docs$(RESET)            $(EMOJI_DOCS) Generate documentation"
+	@echo -e "  $(BLUE)make docs$(RESET)            $(EMOJI_DOCS) Serve documentation (default port 8000)"
+	@echo -e "  $(BLUE)make docs PORT=8080$(RESET)  $(EMOJI_DOCS) Serve docs on custom port"
 
 	@echo -e "$(BOLD)$(EMERALD)[ Benchmarks & Maintenance ]$(RESET)"
 	@echo -e "  $(SLATE)make benchmark$(RESET)        $(EMOJI_BENCHMARK) Run performance benchmarks"
 	@echo -e "  $(SLATE)make clean$(RESET)            $(EMOJI_CLEAN) Remove build artifacts"
 	@echo -e ""
-	@echo -e "$(SLATE)Run $(BOLD)make <command>$(RESET)$(SLATE) to execute any command$(RESET)"
 
+	@echo -e "$(BOLD)$(EMERALD)[ Scripts ]$(RESET)"
+	@echo -e "  $(PURPLE)make install$(RESET)         $(EMOJI_CLI) run script to install python-dev-tool"
+	@echo -e "  $(CRIMSON)make script SCRIPT_FILE=path$(RESET) $(EMOJI_RELEASE) Run specific script file"
+	@echo -e ""
+	@echo -e "$(SLATE)Run $(BOLD)make <command>$(RESET)$(SLATE) to execute any command$(RESET)"
 # -------------------------------------
 #  Development
 # -------------------------------------
@@ -120,21 +131,22 @@ release:
 
 .PHONY: test
 test:
-	@echo -e "$(CRIMSON)$(EMOJI_TEST) Running tests...$(RESET)"
-	@pytest tests
+	@echo -e "$(CRIMSON)$(EMOJI_TEST) Running tests on $(TEST_FILE)...$(RESET)"
+	@pytest $(TEST_FILE) || (echo -e "$(CRIMSON)$(EMOJI_ERROR) Tests failed!$(RESET)" && exit 1)
 	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Tests passed!$(RESET)"
 
 .PHONY: lint
 lint:
-	@echo -e "$(CRIMSON)$(EMOJI_LINT) Linting with flake8 + mypy...$(RESET)"
-	@flake8 src/ tests/ || (echo -e "$(CRIMSON)$(EMOJI_ERROR) Linting failed!$(RESET)" && exit 1)
+	@echo -e "$(CRIMSON)$(EMOJI_LINT) Linting with ruff...$(RESET)"
+	@ruff check src/ tests/ || (echo -e "$(CRIMSON)$(EMOJI_ERROR) Linting failed!$(RESET)" && exit 1)
+	@echo -e "$(CRIMSON)$(EMOJI_LINT) Type checking with mypy...$(RESET)"
 	@mypy src/ || (echo -e "$(CRIMSON)$(EMOJI_ERROR) Type checking failed!$(RESET)" && exit 1)
-	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Linting passed!$(RESET)"
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Linting and type checking passed!$(RESET)"
 
 .PHONY: format
 format:
-	@echo -e "$(CRIMSON)$(EMOJI_FORMAT) Formatting with black...$(RESET)"
-	@black src/ tests/
+	@echo -e "$(CRIMSON)$(EMOJI_FORMAT) Formatting with ruff...$(RESET)"
+	@ruff format src/ tests/
 	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Formatting complete!$(RESET)"
 
 # -------------------------------------
@@ -149,9 +161,8 @@ deploy:
 
 .PHONY: docs
 docs:
-	@echo -e "$(BLUE)$(EMOJI_DOCS) Generating docs...$(RESET)"
-	@python scripts/generate_docs.py
-	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Documentation generated!$(RESET)"
+	@echo -e "$(BLUE)$(EMOJI_DOCS) Serving documentation on port $(PORT)...$(RESET)"
+	@mkdocs serve --dev-addr=localhost:$(PORT)
 
 # -------------------------------------
 #   Benchmarks & Cleanup
@@ -166,5 +177,34 @@ benchmark:
 .PHONY: clean
 clean:
 	@echo -e "$(SLATE)$(EMOJI_CLEAN) Cleaning build artifacts...$(RESET)"
-	@rm -rf build dist __pycache__ *.egg-info .pytest_cache .mypy_cache .coverage htmlcov
+	@rm -rf build dist __pycache__ *.egg-info .pytest_cache .mypy_cache .coverage htmlcov .ruff_cache
+	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Cleanup complete!$(RESET)"
+
+# -------------------------------------
+#   Publish & Release
+# -------------------------------------
+
+.PHONY: publish
+publish:
+	@echo -e "$(PURPLE)$(EMOJI_PUBLISH) Publishing new version...$(RESET)"
+	@python scripts/publish.sh
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Release created successfully!$(RESET)"
+
+
+# -------------------------------------
+#   Scripts File Running Commands
+# -------------------------------------
+
+.PHONY: install
+install:
+	@echo -e "$(PURPLE)$(EMOJI_CLI) Installing python-dev-tool...$(RESET)"
+	@${SCRIPT_FILE}install.sh
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Installation completed successfully!$(RESET)"
+	@echo -e "$(PURPLE)$(EMOJI_CLI) Running post-installation setup...$(RESET)"
+
+.PHONY: script
+script:
+	@echo -e "$(PURPLE)$(EMOJI_CLI) Running script: $(SCRIPT_FILE)$(RESET)"
+	@${SCRIPT_FILE}$(SCRIPT_FILE)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Script completed successfully!$(RESET)"

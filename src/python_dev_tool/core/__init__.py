@@ -10,9 +10,8 @@ from .exceptions import DevToolError, ConfigError, ProcessError, FrameworkError
 from .framework_detector import FrameworkDetector
 from .process_manager import ProcessManager
 from .file_watcher import FileWatcher
-from .server import DevServer
 from .logger import DevToolLogger
-
+from .server import DevelopmentServer
 
 
 __all__ = [
@@ -26,6 +25,6 @@ __all__ = [
     "FrameworkDetector",
     "ProcessManager",
     "FileWatcher",
-    "DevServer",
     "DevToolLogger",
+    "DevelopmentServer",
 ]

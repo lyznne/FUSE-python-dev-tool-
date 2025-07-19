@@ -77,4 +77,13 @@ class ProjectError(DevToolError):
     def __init__(self, message: str, project_id: Optional[str] = None):
         super().__init__(message)
         self.project_id = project_id
-        
+
+
+class LogError(DevToolError):
+    """Raised when there's an error with log-related operations."""
+
+
+    def __init__(self, message: str):
+        super().__init__(message)
+        self.message = message or {}
+

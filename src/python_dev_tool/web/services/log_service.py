@@ -586,3 +586,10 @@ class LogService:
     ) -> AsyncGenerator[LogEntry, None]:
         """Stream logs in real-time."""
         pass
+
+
+def get_log_service() -> LogService:
+    """Get the singleton instance of LogService."""
+    if not hasattr(get_log_service, "_instance"):
+        get_log_service._instance = LogService()
+    return get_log_service._instance

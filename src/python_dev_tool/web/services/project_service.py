@@ -545,3 +545,10 @@ class ProjectService:
             dirs[:] = [d for d in dirs if not d.startswith(".")]
             count += len(files)
         return count
+
+
+async def get_project_service() -> ProjectService:
+    """Dependency injection for ProjectService."""
+    service = ProjectService()
+    await service.initialize()
+    return service

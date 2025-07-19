@@ -14,7 +14,7 @@ from rich.console import Console
 from rich.prompt import Prompt, Confirm
 
 from python_dev_tool.core.exceptions import DevToolError
-from python_dev_tool.utils.file_utils import create_directory, write_file
+from python_dev_tool.utils.file_utils import FileUtils, create_directory, write_file
 from python_dev_tool.templates.config import get_framework_config
 
 
@@ -155,7 +155,7 @@ class InitCommand:
         ]
 
         for directory in directories:
-            create_directory(self.options.project_path / directory)
+            FileUtils.create_directory(self.options.project_path / directory)
 
     def _generate_config(self) -> None:
         """Generate project configuration."""
@@ -206,14 +206,14 @@ class InitCommand:
 
         # Write main config file
         config_path = self.options.project_path / ".devtool" / "config.toml"
-        write_file(config_path, toml.dumps(config_data))
+        FileUtils.write_file(config_path, toml.dumps(config_data))
 
         # Write environment-specific configs
         dev_config = {
             **config_data,
             "development": {**config_data["development"], "debug": True},
         }
-        write_file(
+        FileUtils.write_file(
             self.options.project_path / ".devtool" / "development.toml",
             toml.dumps(dev_config),
         )
@@ -222,7 +222,7 @@ class InitCommand:
             **config_data,
             "development": {**config_data["development"], "debug": False},
         }
-        write_file(
+        FileUtils.write_file(
             self.options.project_path / ".devtool" / "production.toml",
             toml.dumps(prod_config),
         )
@@ -238,12 +238,12 @@ class InitCommand:
             "commands": self._get_framework_commands(),
             "dependencies": self._get_framework_dependencies(),
         }
-        write_file(detection_file, json.dumps(detection_data, indent=2))
+        FileUtils.write_file(detection_file, json.dumps(detection_data, indent=2))
 
         # Create framework-specific run script
         run_script = self._generate_run_script()
         script_path = self.options.project_path / ".devtool" / "run.py"
-        write_file(script_path, run_script)
+        FileUtils.write_file(script_path, run_script)
 
         # Make script executable
         script_path.chmod(0o755)
@@ -254,35 +254,35 @@ class InitCommand:
         requirements_path = self.options.project_path / "requirements.txt"
         if not requirements_path.exists():
             base_requirements = self._get_base_requirements()
-            write_file(requirements_path, base_requirements)
+            FileUtils.write_file(requirements_path, base_requirements)
 
         # Create .gitignore if it doesn't exist
         gitignore_path = self.options.project_path / ".gitignore"
         if not gitignore_path.exists():
             gitignore_content = self._get_gitignore_content()
-            write_file(gitignore_path, gitignore_content)
+            FileUtils.write_file(gitignore_path, gitignore_content)
 
         # Create development script
         dev_script = self._generate_dev_script()
         dev_script_path = self.options.project_path / ".devtool" / "dev.py"
-        write_file(dev_script_path, dev_script)
+        FileUtils.write_file(dev_script_path, dev_script)
 
         # Create health check script
         health_script = self._generate_health_check_script()
         health_script_path = self.options.project_path / ".devtool" / "health.py"
-        write_file(health_script_path, health_script)
+        FileUtils.write_file(health_script_path, health_script)
 
     def _create_deployment_files(self) -> None:
         """Create deployment files."""
         # Create Dockerfile
         dockerfile_content = self._generate_dockerfile()
         dockerfile_path = self.options.project_path / "Dockerfile"
-        write_file(dockerfile_path, dockerfile_content)
+        FileUtils.write_file(dockerfile_path, dockerfile_content)
 
         # Create docker-compose.yml
         docker_compose_content = self._generate_docker_compose()
         docker_compose_path = self.options.project_path / "docker-compose.yml"
-        write_file(docker_compose_path, docker_compose_content)
+        FileUtils.write_file(docker_compose_path, docker_compose_content)
 
         # Create deployment configuration
         deployment_config = {
@@ -305,7 +305,7 @@ class InitCommand:
             }
         }
         deployment_path = self.options.project_path / ".devtool" / "deployment.json"
-        write_file(deployment_path, json.dumps(deployment_config, indent=2))
+        FileUtils.write_file(deployment_path, json.dumps(deployment_config, indent=2))
 
     def _initialize_git(self) -> None:
         """Initialize git repository."""

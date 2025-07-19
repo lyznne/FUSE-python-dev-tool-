@@ -34,7 +34,7 @@ from python_dev_tool.core.events import EventEmitter
 from python_dev_tool.core.exceptions import FrameworkNotFoundError
 from python_dev_tool.web.app import create_web_app
 from python_dev_tool.monitoring.metrics import MetricsCollector
-from python_dev_tool.monitoring.health import HealthChecker
+from python_dev_tool.monitoring.health import HealthCheck
 
 
 @dataclass
@@ -96,7 +96,7 @@ class DevToolApp:
         self.process_manager = ProcessManager(self.event_emitter, self.logger)
         self.file_watcher = FileWatcher(self.project_path, self.event_emitter)
         self.metrics_collector = MetricsCollector()
-        self.health_checker = HealthChecker()
+        self.health_checker = HealthCheck()
 
         # Development server and web app
         self.dev_server: Optional[DevelopmentServer] = None

@@ -1,0 +1,54 @@
+project_name = "My Project"
+project_root = "."
+framework = "fastapi"
+python_version = "3.13"
+debug = true
+testing = false
+
+plugins = ["logger", "auth"]
+
+[server]
+host = "127.0.0.1"
+port = 8000
+auto_reload = true
+show_logs = true
+log_level = "info"
+workers = 2
+timeout = 30
+
+[dashboard]
+enabled = true
+host = "127.0.0.1"
+port = 8001
+auto_open = true
+theme = "dark"
+
+[security]
+secret_key = "supersecretkey123"
+algorithm = "HS256"
+access_token_expire_minutes = 60
+allowed_hosts = ["localhost", "127.0.0.1"]
+allowed_origins = ["*"]
+
+[deployment]
+default_platform = "linux"
+auto_deploy = false
+health_check_enabled = true
+rollback_enabled = true
+timeout = 300
+
+[logging]
+level = "debug"
+format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+file_enabled = false
+file_path = "fuse.log"
+max_file_size = 10485760
+backup_count = 5
+
+[commands]
+dev = "python main.py"
+build = "python build.py"
+
+[environment]
+ENV = "development"
+DEBUG = "1"

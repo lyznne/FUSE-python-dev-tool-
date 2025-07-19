@@ -1,0 +1,201 @@
+[build-system]
+requires = ["hatchling>=1.8.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fuse"
+version = "0.0.1"
+description = "A comprehensive development tool for Python applications with live server, monitoring, and deployment capabilities"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Enos Lyznne", email = "emuthiani26@gmail.com" }]
+maintainers = [{ name = "Enos Lyznne", email = "emuthiani26@gmail.com" }]
+keywords = [
+    "python",
+    "development",
+    "tool",
+    "server",
+    "monitoring",
+    "deployment",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Framework :: AsyncIO",
+    "Framework :: Django",
+    "Framework :: FastAPI",
+    "Framework :: Flask",
+    "Framework :: Pyramid",
+    "Framework :: Tornado",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: AGPL  License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Testing",
+    "Topic :: System :: Monitoring",
+    "Topic :: System :: Systems Administration",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.20.0",
+    "pydantic>=2.0.0",
+    "watchdog>=3.0.0",
+    "psutil>=5.9.0",
+    "aiofiles>=23.0.0",
+    "websockets>=11.0.0",
+    "python-multipart>=0.0.6",
+    "toml>=0.10.2",
+    "rich>=13.0.0",
+    "typer>=0.9.0",
+    "httpx>=0.24.0",
+    "pyyaml>=6.0.0",
+    "gitpython>=3.1.0",
+]
+
+
+[project.optional-dependencies]
+dev = [
+     "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.21.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+django = [
+    "django>=4.0.0",
+]
+flask = [
+    "flask>=2.0.0",
+]
+streamlit = [
+    "streamlit>=1.20.0",
+]
+monitoring = [
+    "prometheus-client>=0.16.0",
+    "grafana-api>=1.0.0",
+]
+deployment = [
+    "kubernetes>=26.0.0",
+    "boto3>=1.26.0",
+    "google-cloud-compute>=1.11.0",
+    "azure-mgmt-compute>=29.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/lyznne/python-dev-tool"
+Documentation = "https://python-dev-tool.readthedocs.io"
+Repository = "https://github.com/lyznne/python-dev-tool"
+Issues = "https://github.com/lyznne/python-dev-tool/issues"
+Changelog = "https://github.com/lyznne/python-dev-tool/blob/main/CHANGELOG.md"
+
+[project.scripts]
+python-dev-tool = "python_dev_tool.cli.main:main"
+pdt = "python_dev_tool.cli.main:main"
+devtool = "python_dev_tool.cli.main:main"
+
+[project.entry-points."python_dev_tool.frameworks"]
+django = "python_dev_tool.frameworks.django:DjangoFramework"
+flask = "python_dev_tool.frameworks.flask:FlaskFramework"
+fastapi = "python_dev_tool.frameworks.fastapi:FastAPIFramework"
+streamlit = "python_dev_tool.frameworks.streamlit:StreamlitFramework"
+
+[project.entry-points."python_dev_tool.deployment"]
+docker = "python_dev_tool.deployment.docker:DockerDeployment"
+railway = "python_dev_tool.deployment.platforms.railway:RailwayDeployment"
+render = "python_dev_tool.deployment.platforms.render:RenderDeployment"
+heroku = "python_dev_tool.deployment.platforms.heroku:HerokuDeployment"
+
+[tool.hatch.version]
+path = "src/python_dev_tool/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/.github",
+    "/docs",
+    "/tests",
+    "/examples",
+    "/.pre-commit-config.yaml",
+    "/tox.ini",
+    "/.coveragerc",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/python_dev_tool"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312', 'py313']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | frontend
+)/
+'''
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "e2e: marks tests as end-to-end tests",
+]
+
+[tool.coverage.run]
+source = ["src/python_dev_tool"]
+omit = ["*/tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+# update this to use ruff , pytest and all version are wrong so are the url 

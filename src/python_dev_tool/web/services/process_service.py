@@ -599,3 +599,8 @@ class ProcessService:
             raise ProcessError(f"Failed to stop process: {str(e)}")
 
 
+def get_process_service() -> ProcessService:
+    """Get the singleton instance of ProcessService."""
+    if not hasattr(get_process_service, "_instance"):
+        get_process_service._instance = ProcessService()
+    return get_process_service._instance

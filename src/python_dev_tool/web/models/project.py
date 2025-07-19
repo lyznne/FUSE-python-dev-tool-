@@ -6,6 +6,9 @@ Project Models
 
 from enum import Enum
 from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional
+
 
 
 class ProjectCreate(BaseModel):
@@ -30,5 +33,16 @@ class ProjectType(str, Enum):
 
 class Project:
     """Project data"""
-   1 8 9n
-#
+    id: str
+    name: str
+    type: ProjectType
+    status: ProjectStatus
+    created_at: datetime
+    updated_at: datetime
+    started_at: Optional[datetime] = None
+    stopped_at: Optional[datetime] = None
+    metrics: Optional[dict] = None
+
+class ProjectResponse(BaseModel):
+    """Response model for project data"""
+    pass

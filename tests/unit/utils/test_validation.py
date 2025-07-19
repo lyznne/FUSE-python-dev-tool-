@@ -23,37 +23,50 @@ class TestValidateProjectPath:
 
     def test_nonexistent_path(self, tmp_path):
         non_existent = tmp_path / "nonexistent"
-        with pytest.raises(DevToolError):
+        with pytest.raises(DevToolError, match="does not exist"):
             validate_project_path(non_existent)
 
     def test_nonexistent_allowed(self, tmp_path):
         non_existent = tmp_path / "nonexistent"
-        result = validate_project_path(non_existent, must_exist=False)
+        result = validate_project_path(
+            non_existent, must_exist=False, must_be_dir=False
+        )
         assert result == non_existent.resolve()
 
     def test_file_instead_of_dir(self, tmp_path):
         file_path = tmp_path / "file.txt"
         file_path.touch()
-        with pytest.raises(DevToolError):
+        with pytest.raises(DevToolError, match="not a directory"):
             validate_project_path(file_path)
 
     def test_hidden_directory(self, tmp_path):
         hidden_dir = tmp_path / ".hidden"
         hidden_dir.mkdir()
-        with pytest.raises(DevToolError):
+        with pytest.raises(DevToolError, match="Hidden directories not allowed"):
             validate_project_path(hidden_dir)
 
     def test_check_empty_directory(self, tmp_path):
         empty_dir = tmp_path / "empty"
         empty_dir.mkdir()
-        validate_project_path(empty_dir, check_empty=True)
+        with pytest.raises(DevToolError, match="Project path is empty"):
+            validate_project_path(empty_dir, check_empty=True)
 
         non_empty_dir = tmp_path / "nonempty"
         non_empty_dir.mkdir()
         (non_empty_dir / "file.txt").touch()
-        with pytest.raises(DevToolError):
+        with pytest.raises(DevToolError, match="Project path is not empty"):
             validate_project_path(non_empty_dir, check_empty=True)
 
+    def test_relative_path_conversion(self):
+        relative_path = Path("relative/path")
+        result = validate_project_path(relative_path, must_exist=False)
+        assert result.is_absolute()
+
+    def test_hidden_directory_allowed(self, tmp_path):
+        hidden_dir = tmp_path / ".hidden"
+        hidden_dir.mkdir()
+        result = validate_project_path(hidden_dir, allow_hidden=True)
+        assert result == hidden_dir.resolve()
 
 class TestValidateName:
     def test_valid_name(self):

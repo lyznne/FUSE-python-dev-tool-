@@ -4,6 +4,7 @@ app.py - Web App
 """
 
 # sys imports
+import os
 from contextlib import asynccontextmanager
 import logging
 from pathlib import Path
@@ -14,7 +15,9 @@ from fastapi.staticfiles import StaticFiles
 
 
 # local imports
-from python_dev_tool.web.api import projects, processes, logs, commands, files, websocket
+from python_dev_tool.cli import commands
+from python_dev_tool.core.events import EventEmitter
+from python_dev_tool.web.api import logs, processes, projects, files, websocket
 from python_dev_tool.web.middleware.cors import setup_cors
 from python_dev_tool.web.middleware.auth import AuthMiddleware
 from python_dev_tool.web.middleware.rate_limit import RateLimitMiddleware
@@ -22,7 +25,7 @@ from python_dev_tool.web.middleware.security import SecurityMiddleware
 from python_dev_tool.web.services.project_service import ProjectService
 from python_dev_tool.web.services.process_service import ProcessService
 from python_dev_tool.web.services.log_service import LogService
-
+from python_dev_tool.core.config import Config
 
 # configure Logging
 logging.basicConfig(level=logging.INFO)
@@ -51,6 +54,32 @@ async def lifespan(app: FastAPI):
     await process_service.cleanup()
     await log_service.cleanup()
 
+
+def create_dev_ui_app(project_path: Path) -> FastAPI:
+    """Create the development UI app."""
+
+    # get project path
+    project_path_str = os.getenv("DEVTOOL_PROJECT_PATH", project_path)
+    if not project_path_str:
+        project_path_str = str(Path.cwd())
+    else:
+        project_path = Path(project_path_str)
+
+    try:
+        config = Config.load_from_project(project_path)
+    except Exception:
+        config = Config()
+
+
+    event_emitter = EventEmitter()
+    # logger = DevToolLogger(project_path)
+    logger  =  logging.getLogger(__name__)
+
+
+    # create app
+    app = create_web_app(config, event_emitter, logger)
+
+    return app
 
 def create_web_app(
     app_state: dict,

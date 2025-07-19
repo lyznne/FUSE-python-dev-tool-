@@ -7,6 +7,7 @@ CLI - Terminal UI
 
 # sys imports
 import asyncio
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
@@ -43,7 +44,7 @@ app = typer.Typer(
 __version__ = "0.0.1"
 
 
-class LogLevel(str, typer.Choice):
+class LogLevel(str, Enum):
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"
@@ -65,7 +66,6 @@ def verbose_callback(value: bool) -> None:
     """Enable verbose mode."""
     if value:
         import logging
-
         logging.basicConfig(level=logging.DEBUG)
 
 
@@ -74,7 +74,7 @@ def main(
     version: bool = typer.Option(
         None,
         "--version",
-        "-v",
+        "-V",
         help="Show version information and exit.",
         callback=version_callback,
         is_eager=True,
@@ -132,6 +132,9 @@ def init(
     force: bool = typer.Option(
         False, "--force", help="Force initialization even if directory is not empty"
     ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output for debugging")
+
 ) -> None:
     """
     🎯 Initialize a new Python project with development tools
@@ -186,10 +189,9 @@ def init(
 
     except Exception as e:
         console.print(f"[bold red]Unexpected error occurred: {e}[/bold red]")
-        global verbose
-        import logging
-        if verbose or logging.getLogger().getEffectiveLevel() == logging.DEBUG:
+        if verbose:
             console.print_exception()
+
         raise typer.Exit(1)
 
 
@@ -214,6 +216,10 @@ def dev(
     ),
     open_browser: bool = typer.Option(
         True, "--open-browser/--no-open-browser", help="Open the browser after starting"
+    ),
+
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output for debugging"
     ),
 ) -> None:
     """
@@ -299,6 +305,9 @@ def build(
         "--optimize/--no-optimize",
         help="Enable asset optimization / Build optimizations",
     ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output for debugging"
+    ),
 ) -> None:
     """
     🏗️ Build the project for deployment
@@ -382,6 +391,9 @@ def deploy(
     ),
     auto_build: bool = typer.Option(
         True, "--build/--no-build", help="Build project before deployment"
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output for debugging"
     ),
 ) -> None:
     """
@@ -472,6 +484,9 @@ def config_command(
     project_path: Path = typer.Option(
         Path.cwd(), "--project", help="Project path for local configuration"
     ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output for debugging"
+    ),
 ) -> None:
     """
     ⚙️ Manage configuration settings
@@ -539,6 +554,9 @@ def status(
     ),
     detailed: bool = typer.Option(
         False, "--detailed", "-d", help="Show detailed status information"
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output for debugging"
     ),
 ) -> None:
     """

@@ -8,9 +8,9 @@ import json
 import logging
 from datetime import datetime
 
-from ..services.project_service import ProjectService, get_project_service
-from ..services.process_service import ProcessService, get_process_service
-from ..services.log_service import LogService, get_log_service
+from python_dev_tool.web.services.project_service import ProjectService, get_project_service
+from python_dev_tool.web.services.process_service import ProcessService, get_process_service
+from python_dev_tool.web.services.log_service import LogService, get_log_service
 
 
 logger = logging.getLogger(__name__)

@@ -4,8 +4,9 @@ config.py - Config File
 """
 
 # sys imports
-from ctypes.macholib import framework
+from multiprocessing import Value
 import os
+from numpy import isin
 import toml
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -58,6 +59,25 @@ class DashboardConfig(BaseModel):
     auto_open: bool = True
     theme: str = "dark"
 
+
+
+    @field_validator('port', mode='before')
+    @classmethod
+    def validate_port(cls, v):
+        """Ensure port is a valid integer between 1024 and 65535."""
+        if isinstance(v, (tuple, list)):
+            v = v[0] if v else APP_UI_PORT
+
+        try:
+            port = int(v)
+        except (TypeError, ValueError):
+            raise ValueError(f"Port must be an integer, got: {v!r}")
+
+        if not (1024 <= port <= 65535):
+            raise ValueError(f"Invalid port {port}. Must be between 1024 and 65535.")
+
+        return port
+
     @field_validator("theme")
     @classmethod
     def validate_theme(cls, value):
@@ -79,10 +99,23 @@ class SecurityConfig(BaseModel):
     secret_key: str = Field(default_factory=lambda: os.urandom(32).hex())
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
-    allowed_host: List[str] = ["localhost", "127.0.0.1"]
-    allowed_origin: List[str] = ["*"]
+    allowed_hosts: List[str] = ["localhost", "127.0.0.1"]
+    allowed_origins: List[str] = Field(default=["*"])
     # cors_origins: List[str] = ["http://localhost:3000"]
 
+    @field_validator("allowed_origins", mode="before")
+    @classmethod
+    def validate_allowed_origins(cls, v:Any)-> List[str]:
+        """Convert string origin to list if needed."""
+        if v is None:
+            return ["*"]
+        if isinstance(v, str):
+            return [v.strip()]
+        if isinstance(v, (list,tuple)):
+            return [item.strip() for item in v if isinstance(item, str)]
+        raise ValueError("allowed_origins must be a string or a list of strings")
+
+    
 
 class DeploymentConfig(BaseModel):
     """Deployment configuration."""
@@ -154,21 +187,27 @@ class DevToolConfig(BaseSettings):
 
         return v
 
-    @field_validator("server")
+    @field_validator("server", mode="before")
     @classmethod
-    def validate_server(cls, v):
+    def validate_server(cls, v: Any): ## To be fixed
         """Validate server settings."""
-        if v.port < 1024 or v.port > 65535:
-            raise ValueError("Invalid port number (must be between 1024 and 65535)")
+        if not isinstance(v, dict):
+            raise ValueError("Expected server config to be a dict")
+        # if "port" not in v or not isinstance(v["port"], int):
+        #     raise ValueError("Server port must be an integer")
+        port  = v.get("port")
+        if port is not None and (port < 1024 or port > 65535):
+            raise ValueError("Invalid server port (must be between 1024 and 65535)")
         return v
 
-    @field_validator("dashboard")
-    @classmethod
-    def validate_dashboard(cls, v):
-        """Validate dashboard settings."""
-        if v.port < 1024 or v.port > 65535:
-            raise ValueError("Invalid port number (must be between 1024 and 65535)")
-        return v
+    # already implemented in dashboard config
+    # @field_validator("dashboard")
+    # @classmethod
+    # def validate_dashboard(cls, v):
+    #     """Validate dashboard settings."""
+    #     if v.port < 1024 or v.port > 65535:
+    #         raise ValueError("Invalid port number (must be between 1024 and 65535)")
+    #     return v
 
 
 class Config: # class name ConfigManager
@@ -203,6 +242,22 @@ class Config: # class name ConfigManager
 
         return None
 
+    def _unwrap_singleton(self, value):
+        """Unwrap singleton values."""
+        if isinstance(value, (tuple, list))  and len(value) == 1:
+            return self._unwrap_singleton(value[0])
+        return value
+
+    def _sanitize_config(self, config_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Sanitize config data."""
+        sanitized = {}
+        for key, value in config_data.items():
+            if isinstance(value, dict):
+                sanitized[key] = self._sanitize_config(value)
+            else:
+                sanitized[key] = self._unwrap_singleton(value)
+        return sanitized
+
     def _load_config(self) -> None:
         """Load configuration from file."""
         config_data = {}
@@ -222,6 +277,9 @@ class Config: # class name ConfigManager
                 raise ConfigError(
                     f"Failed to load configuration from {self.config_path}: {e}"
                 )
+
+        # sanitize config
+        config_data = self._sanitize_config(config_data)
 
         # Load environment variables and create config
         try:

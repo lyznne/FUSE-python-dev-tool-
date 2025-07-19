@@ -9,9 +9,10 @@ from pydantic import BaseModel, Field
 import logging
 from datetime import datetime
 
-from ..models.project import ProjectCreate, ProjectUpdate, ProjectStatus
-from ..services.project_service import ProjectService, get_project_service
-from ..models.process import Process
+from python_dev_tool.web.models.process import Process
+from python_dev_tool.web.models.project import ProjectCreate, ProjectStatus, ProjectUpdate, ProjectResponse
+from python_dev_tool.web.services.project_service import ProjectService,get_project_service
+
 
 
 
