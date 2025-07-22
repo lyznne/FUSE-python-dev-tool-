@@ -42,21 +42,30 @@ class TestValidateProjectPath:
     def test_hidden_directory(self, tmp_path):
         hidden_dir = tmp_path / ".hidden"
         hidden_dir.mkdir()
-        with pytest.raises(DevToolError, match="Hidden directories not allowed"):
+        with pytest.raises(DevToolError, match="Hidden directories are not allowed"):
             validate_project_path(hidden_dir)
 
     def test_check_empty_directory(self, tmp_path):
+        """Test validation of empty directory."""
         empty_dir = tmp_path / "empty"
         empty_dir.mkdir()
-        with pytest.raises(DevToolError, match="Project path is empty"):
+
+        # Create a file to make directory non-empty
+        (empty_dir / "file.txt").write_text("content")
+
+        # Now test that non-empty directory raises error when check_empty=True
+        with pytest.raises(DevToolError, match="Project directory is not empty"):
             validate_project_path(empty_dir, check_empty=True)
 
-        non_empty_dir = tmp_path / "nonempty"
-        non_empty_dir.mkdir()
-        (non_empty_dir / "file.txt").touch()
-        with pytest.raises(DevToolError, match="Project path is not empty"):
-            validate_project_path(non_empty_dir, check_empty=True)
+        # Test that empty directory passes when check_empty=True
+        empty_dir2 = tmp_path / "empty2"
+        empty_dir2.mkdir()
 
+        # This should NOT raise an error
+        result = validate_project_path(empty_dir2, check_empty=True)
+        assert result == empty_dir2.resolve()
+
+        
     def test_relative_path_conversion(self):
         relative_path = Path("relative/path")
         result = validate_project_path(relative_path, must_exist=False)

@@ -3,17 +3,29 @@ FUSE - (python dev tool) - Web App
 api/projects.py - Projects API
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query, Path
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+
+# sys
 import logging
 from datetime import datetime
 
+
+# 3rd party imports
+from fastapi import APIRouter, HTTPException, Depends, Query, Path
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field
+
+# local imports
 from python_dev_tool.web.models.process import Process
-from python_dev_tool.web.models.project import ProjectCreate, ProjectStatus, ProjectUpdate, ProjectResponse
-from python_dev_tool.web.services.project_service import ProjectService,get_project_service
-
-
+from python_dev_tool.web.models.project import (
+    ProjectCreate,
+    ProjectStatus,
+    ProjectUpdate,
+    ProjectResponse,
+)
+from python_dev_tool.web.services.project_service import (
+    ProjectService,
+    get_project_service,
+)
 
 
 logger = logging.getLogger(__name__)

@@ -61,7 +61,7 @@ FRAMEWORK_SIGNATURES = {
         ],
         "requirements": ["django"],
         "commands": {
-            "dev": "python manage.py runserver",
+            "dev": "python manage.py runserver {host}:{port}",
             "migrate": "python manage.py migrate",
             "shell": "python manage.py shell",
             "test": "python manage.py test",
@@ -84,7 +84,7 @@ FRAMEWORK_SIGNATURES = {
         ],
         "requirements": ["flask"],
         "commands": {
-            "dev": "flask run",
+            "dev": "flask run --host {host} --port {port}",
             "shell": "flask shell",
         },
         "config_files": ["config.py", "instance/config.py"],
@@ -102,7 +102,7 @@ FRAMEWORK_SIGNATURES = {
         ],
         "requirements": ["fastapi", "uvicorn"],
         "commands": {
-            "dev": "uvicorn main:app --reload",
+            "dev": "uvicorn main:app --host {host} --port {port} --reload",
             "prod": "uvicorn main:app --host 0.0.0.0 --port 8000",
         },
         "config_files": ["main.py", "app.py"],
@@ -118,7 +118,7 @@ FRAMEWORK_SIGNATURES = {
         ],
         "requirements": ["streamlit"],
         "commands": {
-            "dev": "streamlit run app.py",
+            "dev": "streamlit run app.py --server.port {port} --server.address {host}",
         },
         "config_files": [".streamlit/config.toml"],
     },
@@ -134,7 +134,7 @@ FRAMEWORK_SIGNATURES = {
         ],
         "requirements": ["tornado"],
         "commands": {
-            "dev": "python app.py",
+            "dev": "python app.py --port={port}",
         },
         "config_files": [],
     },
@@ -151,7 +151,7 @@ FRAMEWORK_SIGNATURES = {
         ],
         "requirements": ["sanic"],
         "commands": {
-            "dev": "sanic app.py --host=0.0.0.0 --port=8000 --debug",
+            "dev": "sanic app.py --host={host} --port={port} --debug",
         },
         "config_files": [],
     },

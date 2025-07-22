@@ -3,13 +3,20 @@ FUSE - (python dev tool) - Web App
 api/logs.py - Logs API
 """
 
-
-
+# sys imports
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
+# 3rd party imports
+from fastapi import APIRouter
+
+# local imports
 from pydantic import BaseModel
 from python_dev_tool.web.models.log import LogLevel, LogSource
+
+
+
+router = APIRouter()
 
 
 class LogResponse(BaseModel):

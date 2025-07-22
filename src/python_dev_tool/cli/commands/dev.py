@@ -18,12 +18,18 @@ from rich.table import Table
 # local imports
 from python_dev_tool.core.events import EventBus
 from python_dev_tool.core.exceptions import DevToolError
-from python_dev_tool.core.globals import APP_HOST, APP_OPEN_BROWSER, APP_PORT, APP_UI_PORT
+from python_dev_tool.core.globals import (
+    APP_HOST,
+    APP_OPEN_BROWSER,
+    APP_PORT,
+    APP_UI_PORT,
+)
 from python_dev_tool.core.process_manager import ProcessManager
 from python_dev_tool.core.file_watcher import FileWatcher
 from python_dev_tool.core.framework_detector import FrameworkDetector
-from python_dev_tool.web.app import   create_dev_ui_app
+from python_dev_tool.web.app import create_dev_ui_app
 from python_dev_tool.utils.network_utils import NetworkUtils
+
 
 @dataclass
 class DevOptions:
@@ -52,12 +58,17 @@ class DevCommand:
         open_browser: bool = APP_OPEN_BROWSER,
         event_bus: Optional[EventBus] = None,
     ):
-
         def _unwrap(value, fallback=None):
             """Unwraps a value or returns a fallback."""
-            if isinstance(value, (tuple,list)):
+            if isinstance(value, (tuple, list)):
                 return value[0] if value else fallback
             return value
+
+        # Store original values for testing purposes
+        self._original_port = port
+        self._original_host = host
+        self._original_ui_port = ui_port
+        self._original_open_browser = open_browser
 
         self.options = DevOptions(
             project_path=project_path,
@@ -74,6 +85,26 @@ class DevCommand:
         self.dev_ui_process = None
         self.app_process = None
         self.running = False
+
+    @property
+    def original_ui_port(self):
+        """Access to original ui_port value for testing."""
+        return self._original_ui_port
+
+    @property
+    def original_port(self):
+        """Access to original port value for testing."""
+        return self._original_port
+
+    @property
+    def original_host(self):
+        """Access to original host value for testing."""
+        return self._original_host
+
+    @property
+    def original_open_browser(self):
+        """Access to original open_browser value for testing."""
+        return self._original_open_browser
 
     async def run(self) -> None:
         """Run the development server."""
@@ -111,18 +142,22 @@ class DevCommand:
     async def _validate_project(self) -> None:
         """Validate project structure."""
         if not self.options.project_path.exists():
-            raise DevToolError(f"Project directory does not exist: {self.options.project_path}")
+            raise DevToolError(
+                f"Project directory does not exist: {self.options.project_path}"
+            )
 
         config_path = self.options.project_path / ".devtool" / "config.toml"
         if not config_path.exists():
-            raise DevToolError(
-                "Project not initialized. Run 'fuse init' first."
-            )
+            raise DevToolError("Project not initialized. Run 'fuse init' first.")
 
         # Check if ports are available
         if not NetworkUtils.check_port_available(self.options.host, self.options.port):
-            new_port = NetworkUtils.find_free_port(self.options.host, start_port=self.options.port)
-            self.console.print(f"[yellow]Port {self.options.port} is busy, using {new_port}[/yellow]")
+            new_port = NetworkUtils.find_free_port(
+                self.options.host, start_port=self.options.port
+            )
+            self.console.print(
+                f"[yellow]Port {self.options.port} is busy, using {new_port}[/yellow]"
+            )
             self.options.port = new_port
 
         if not NetworkUtils.check_port_available(
@@ -131,7 +166,9 @@ class DevCommand:
             new_ui_port = NetworkUtils.find_free_port(
                 self.options.host, start_port=self.options.ui_port
             )
-            self.console.print(f"[yellow]UI port {self.options.ui_port} is busy, using {new_ui_port}[/yellow]")
+            self.console.print(
+                f"[yellow]UI port {self.options.ui_port} is busy, using {new_ui_port}[/yellow]"
+            )
             self.options.ui_port = new_ui_port
 
     # async def _start_dev_ui(self) -> None:
@@ -150,7 +187,6 @@ class DevCommand:
     #             self.options.ui_port = int(_unwrap(self.options.ui_port, APP_UI_PORT))
     #         except Exception as e:
     #             raise DevToolError(f"Invalid UI port: {self.options.ui_port} ({e})")
-
 
     #         if self.options.ui_port < 1024 or self.options.ui_port > 65535:
     #             self.options.ui_port = NetworkUtils.find_free_port(self.options.host)
@@ -182,7 +218,6 @@ class DevCommand:
 
     #     except Exception as e:
     #         raise DevToolError(f"Failed to start development UI: {e}")
-
 
     async def _start_dev_ui(self) -> None:
         """Start the development UI server."""
@@ -221,14 +256,24 @@ class DevCommand:
                 self.options.host,
                 "--port",
                 str(self.options.ui_port),
-                "--reload" if self.options.debug else "--no-reload",
+                "--app-dir",
+                str(self.options.project_path),
                 "--factory",  # Important: tells uvicorn to call the function
             ]
+            # Append  reload flag
+            if self.options.debug:
+                ui_command.append("--reload")
+            else:
+                ui_command.append("--no-reload")
 
             # Set environment variable for project path
             env = os.environ.copy()
             env["DEVTOOL_PROJECT_PATH"] = str(self.options.project_path)
 
+            # Start the UI process
+            self.console.print(
+                f"[blue]Running UI command: {' '.join(ui_command)}[/blue]"
+            )
             self.dev_ui_process = await asyncio.create_subprocess_exec(
                 *ui_command,
                 cwd=self.options.project_path,
@@ -245,24 +290,38 @@ class DevCommand:
         except Exception as e:
             raise DevToolError(f"Failed to start development UI: {e}")
 
-
     async def _start_application(self) -> None:
         """Start the main application."""
         try:
             self.console.print("[blue]Starting application server...[/blue]")
 
+            port = self.options.port
+            if not NetworkUtils.check_port_available(self.options.host, self.options.port):
+                port = NetworkUtils.find_free_port(self.options.host, start_port=self.options.port)
+                self.console.print(f"[yellow]Port {self.options.port} is busy, using {port}[/yellow]")
+
             # Detect framework and get run command
-            detector = FrameworkDetector(self.options.project_path)
+            detector = FrameworkDetector(
+                project_root=self.options.project_path,
+                host=self.options.host,
+                port=str(self.options.port),
+            )
             framework_info = detector.detect_framework()
 
             if not framework_info:
                 raise DevToolError("Could not detect framework")
 
             # Get run command from framework info
-            run_command = framework_info.commands.get("run")
-            if not run_command:
-                raise DevToolError(f"No run command defined for {framework_info.name}")
+            run_command = framework_info.commands.get("dev")
+            print(f"[DEBUG] Framework: {framework_info.name}")
+            print(f"[DEBUG] Run command: {run_command}")
+            print(f"[DEBUG] Type of run_command: {type(run_command)}")
 
+            if not isinstance(run_command, str):
+                raise DevToolError(f"Invalid run command: Expected str, got {type(run_command)} -> {run_command}")
+
+            if not run_command:
+                raise DevToolError(f"No dev command defined for {framework_info.name}")
             # Start application process
             self.app_process = await asyncio.create_subprocess_shell(
                 run_command,

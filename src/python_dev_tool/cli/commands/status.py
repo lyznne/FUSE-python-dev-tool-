@@ -7,7 +7,7 @@ CLI Commands - Status Command
 import platform
 import time
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 # 3rd party imports
@@ -17,11 +17,12 @@ from rich.panel import Panel
 from rich.progress import ProgressBar
 
 # local imports
+from python_dev_tool.core.events import EventBus
 from python_dev_tool.core.exceptions import DevToolError
 from python_dev_tool.core.framework_detector import FrameworkDetector
 from python_dev_tool.core.process_manager import ProcessManager
-from python_dev_tool.utils.system_utils import get_system_info
-from python_dev_tool.utils.dependency_utils import check_dependencies
+from python_dev_tool.utils.system_utils import DependencyUtils, SystemUtils
+
 
 @dataclass
 class StatusOptions:
@@ -40,12 +41,17 @@ class StatusCommand:
         project_path: Path = Path("."),
         detailed: bool = False,
         check_deps: bool = True,
+        event_bus: Optional[EventBus] = None,
     ):
+        actual_path  =  self._find_project_root(project_path)
+
+
         self.options = StatusOptions(
-            project_path=project_path, detailed=detailed, check_deps=check_deps
+            project_path=actual_path, detailed=detailed, check_deps=check_deps
         )
         self.console = Console()
-        self.process_manager = ProcessManager()
+        self.event_bus = event_bus or EventBus()
+        self.process_manager = ProcessManager(self.event_bus)
 
     def run(self) -> Dict[str, Any]:
         """Run the status command with enhanced diagnostics."""
@@ -57,27 +63,66 @@ class StatusCommand:
         except Exception as e:
             raise DevToolError(f"Status check failed: {e}")
 
-    def _validate_project(self) -> None:
-        """Enhanced project validation with more detailed checks."""
-        if not self.options.project_path.exists():
-            raise DevToolError(
-                f"Project directory does not exist: {self.options.project_path}"
-            )
+    def _find_project_root(self, start_path: Path) -> Path:
+        """Find the project root by looking for .devtool directory."""
+        current_path = start_path.resolve()
 
-        # Check for essential project files
+        # First, check if the provided path is already the project root
+        devtool_path = current_path / ".devtool"
+        config_path = devtool_path / "config.toml"
+        if devtool_path.exists() and devtool_path.is_dir() and config_path.exists():
+            return current_path
+
+        # If not found, traverse up the directory tree
+        while current_path != current_path.parent:
+            devtool_path = current_path / ".devtool"
+            config_path = devtool_path / "config.toml"
+            if devtool_path.exists() and devtool_path.is_dir() and config_path.exists():
+                return current_path
+            current_path = current_path.parent
+
+        # If no project root is found, return the original path and let validation handle errors
+        return start_path.resolve()
+
+    def _validate_project(self) -> None:
+        """Validate the project directory and configuration."""
+        project_path = self.options.project_path
+
+        if not project_path.exists():
+            raise DevToolError(f"Project directory does not exist: {project_path}")
+
+        # Check for DevTool configuration
+        config_path = project_path / ".devtool" / "config.toml"
+        if not config_path.exists():
+            raise DevToolError(f"Config file not found at: {config_path}")
+
+        # Check other essential files (non-fatal warnings)
         essential_files = [
             ("pyproject.toml", "Project configuration"),
-            (".devtool/config.toml", "DevTool configuration"),
+            ("requirements.txt", "Dependencies file"),
+        ]
+        missing_files = [f"{desc} (expected at: {project_path / file_path})"
+                        for file_path, desc in essential_files if not (project_path / file_path).exists()]
+        if missing_files:
+            self.console.print(f"[yellow]Warning: Missing files: {', '.join(missing_files)}[/yellow]")
+
+        # Check other essential files
+        essential_files = [
+            ("pyproject.toml", "Project configuration"),
             ("requirements.txt", "Dependencies file"),
         ]
 
         missing_files = []
-        for file, desc in essential_files:
-            if not (self.options.project_path / file).exists():
-                missing_files.append(desc)
+        for file_path, desc in essential_files:
+            full_path = project_path / file_path
+            if not full_path.exists():
+                missing_files.append(f"{desc} (expected at: {full_path})")
 
         if missing_files:
-            raise DevToolError(f"Missing essential files: {', '.join(missing_files)}")
+            # Make this non-fatal for now, just warnings
+            self.console.print(f"[yellow]Warning: {', '.join(missing_files)}[/yellow]")
+
+
 
     def _gather_status_info(self) -> Dict[str, Any]:
         """Collect comprehensive status information."""
@@ -97,7 +142,7 @@ class StatusCommand:
         status_info.update(self._get_process_status())
 
         # System resource information
-        status_info.update(get_system_info())
+        status_info.update(SystemUtils.get_system_info())
 
         # Dependency information if requested
         if self.options.check_deps:
@@ -165,7 +210,10 @@ class StatusCommand:
 
     def _get_dependency_info(self) -> Dict[str, Any]:
         """Get comprehensive dependency information."""
-        return check_dependencies(self.options.project_path)
+        from python_dev_tool.core.config import Config
+        config = Config.load_project_config(self.options.project_path)
+        commands = (config or {}).get("dependencies", {}).keys()
+        return DependencyUtils.check_dependencies(commands)
 
     def _get_performance_metrics(self) -> Dict[str, Any]:
         """Get real performance metrics."""

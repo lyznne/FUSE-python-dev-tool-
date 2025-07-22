@@ -4,9 +4,7 @@ config.py - Config File
 """
 
 # sys imports
-from multiprocessing import Value
 import os
-from numpy import isin
 import toml
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -115,7 +113,7 @@ class SecurityConfig(BaseModel):
             return [item.strip() for item in v if isinstance(item, str)]
         raise ValueError("allowed_origins must be a string or a list of strings")
 
-    
+
 
 class DeploymentConfig(BaseModel):
     """Deployment configuration."""
@@ -311,7 +309,7 @@ class Config: # class name ConfigManager
         if self._config is None:
             return
 
-        save_path = Path or self.config_path
+        save_path = path or self.config_path
         if save_path is None:
             save_path = Path(FUSE_CONFIG_FILE)
 
@@ -329,7 +327,7 @@ class Config: # class name ConfigManager
     def config(self) -> DevToolConfig:
         """Get configuration object."""
         if self._config is None:
-            self._load_config = DevToolConfig()
+            self._config = DevToolConfig()
         return self._config
 
     def reload(self) -> None:
@@ -357,3 +355,25 @@ class Config: # class name ConfigManager
         #     config.virtual_env = detector.detect_virtual_env()
 
         return config
+
+    @classmethod
+    def load_from_path(cls, path: Path) -> "Config":
+        """Load the configuration from a file path."""
+        return  cls.load_from_project(path)
+
+    @classmethod
+    def load_from_project(cls, project_path: Path) -> "Config":
+        """Load the configuration from a project path."""
+        config_file  =  project_path / ".devtool" / "config.toml"
+
+        if not config_file.exists():
+            raise ConfigError(f"Config file not found at: {config_file}")
+        return cls(config_path=config_file)
+
+    @classmethod
+    def load_project_config(cls, project_path: Path) -> Dict[str, Any]:
+        """Load the configuration from a project path."""
+        config_file  =  project_path / ".devtool" / "config.toml"
+
+        if not config_file.exists():
+            raise ConfigError(f"Config file not found at: {config_file}")

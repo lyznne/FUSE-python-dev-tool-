@@ -4,8 +4,7 @@ Network Utils - Utilities for network operations.
 """
 
 
-from socket import socket
-
+import socket
 
 class NetworkUtils:
     """Network utilities."""

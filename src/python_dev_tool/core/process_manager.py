@@ -7,10 +7,11 @@ process_manager.py - Process Manager (Process lifecycle management)
 from dataclasses import dataclass
 import datetime
 from enum import Enum
-from typing import Optional, Dict
+from typing import Optional, Dict, List, Any
 import psutil
 import asyncio
 import re
+from pathlib import Path
 
 # 3rd party imports
 
@@ -209,3 +210,30 @@ class ProcessManager:
                 return int(match.group(1))
 
         return None
+
+    def get_project_processes(self, project_path: Path) -> List[Dict[str, str]]:
+        """
+        Scan running processes and return those related to the given project.
+        """
+        project_path_str = str(project_path.resolve())
+        matching_procs = []
+
+        for proc in psutil.process_iter(["pid", "name", "cmdline", "cwd"]):
+            try:
+                cwd = proc.info.get("cwd")
+                cmdline = proc.info.get("cmdline") or []
+
+                if cwd and cwd.startswith(project_path_str):
+                    matching_procs.append(
+                        {
+                            "name": proc.info.get("name", "unknown"),
+                            "status": proc.status(),
+                            "pid": str(proc.pid),
+                            "cmd": " ".join(cmdline),
+                        }
+                    )
+
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+
+        return matching_procs

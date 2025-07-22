@@ -14,8 +14,8 @@ from rich.console import Console
 from rich.prompt import Prompt, Confirm
 
 from python_dev_tool.core.exceptions import DevToolError
-from python_dev_tool.utils.file_utils import FileUtils, create_directory, write_file
-from python_dev_tool.templates.config import get_framework_config
+from python_dev_tool.utils.file_utils import FileUtils
+from python_dev_tool.templates.config import FrameworkConfig
 
 
 @dataclass
@@ -201,7 +201,7 @@ class InitCommand:
         }
 
         # Add framework-specific config
-        framework_config = get_framework_config(self.options.framework)
+        framework_config = FrameworkConfig.get_framework_config(self.options.framework)
         config_data.update(framework_config)
 
         # Write main config file

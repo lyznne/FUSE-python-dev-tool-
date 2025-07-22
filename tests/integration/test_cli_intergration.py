@@ -34,15 +34,16 @@ async def test_dev_server_start(tmp_path):
 
     try:
         # Test that we can create the app directly
-        app = create_dev_ui_app()
+        app = create_dev_ui_app(project_path=tmp_path)
         assert app is not None
 
         # Test the DevCommand creation (but don't actually start the server)
         cmd = DevCommand(project_path=tmp_path, port=9999, ui_port=9998)
         assert cmd is not None
 
-        # Test that the command can be initialized without starting the UI
-        # We'll mock the actual server start for testing
+    except Exception as e:
+        # If there are still issues, at least log them for debugging
+        pytest.fail(f"Failed to create dev UI app: {e}")
 
     finally:
         # Clean up environment
@@ -73,8 +74,11 @@ async def test_invalid_port_config(tmp_path):
     # Test with tuple port (should be handled by _unwrap function)
     cmd = DevCommand(project_path=tmp_path, ui_port=(8080, 8081))
 
-    # The command should handle the tuple port internally
-    assert cmd.options.ui_port == (8080, 8081)
+    # The command should preserve the original tuple for testing
+    assert cmd.original_ui_port == (8080, 8081)
+
+    # But the actual options should have the unwrapped value
+    assert cmd.options.ui_port == 8080
 
     # Test that the unwrap function works correctly
     def _unwrap(value, fallback=None):
@@ -83,5 +87,5 @@ async def test_invalid_port_config(tmp_path):
             return value[0] if value else fallback
         return value
 
-    unwrapped_port = _unwrap(cmd.options.ui_port, 8000)
+    unwrapped_port = _unwrap(cmd.original_ui_port, 8000)
     assert unwrapped_port == 8080

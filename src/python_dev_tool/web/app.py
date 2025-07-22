@@ -15,9 +15,8 @@ from fastapi.staticfiles import StaticFiles
 
 
 # local imports
-from python_dev_tool.cli import commands
 from python_dev_tool.core.events import EventEmitter
-from python_dev_tool.web.api import logs, processes, projects, files, websocket
+from python_dev_tool.web.api import logs, processes, projects, files, websocket, commands
 from python_dev_tool.web.middleware.cors import setup_cors
 from python_dev_tool.web.middleware.auth import AuthMiddleware
 from python_dev_tool.web.middleware.rate_limit import RateLimitMiddleware
@@ -75,9 +74,11 @@ def create_dev_ui_app(project_path: Path) -> FastAPI:
     # logger = DevToolLogger(project_path)
     logger  =  logging.getLogger(__name__)
 
+    app_state = {}
+
 
     # create app
-    app = create_web_app(config, event_emitter, logger)
+    app = create_web_app(app_state, config, event_emitter, logger)
 
     return app
 

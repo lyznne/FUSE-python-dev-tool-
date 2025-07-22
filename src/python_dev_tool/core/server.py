@@ -2,7 +2,7 @@
 FUSE - (python dev tool) - Core Development Server
 server.py - Development Server with Framework Integration
 """
-
+# sys imports
 import asyncio
 import os
 import subprocess
@@ -13,6 +13,8 @@ from enum import Enum
 from typing import Dict, List, Optional
 import socket
 import signal
+
+# local imports
 from python_dev_tool.core.events import EventBus, EventType, EventEmitter
 from python_dev_tool.core.exceptions import ServerError
 from python_dev_tool.core.file_watcher import HotReloader
@@ -97,7 +99,7 @@ class FrameworkServer:
                 s.settimeout(1)
                 result = s.connect_ex((host, port))
                 return result == 0
-        except:
+        except Exception:
             return False
 
     def cleanup(self):

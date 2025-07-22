@@ -9,16 +9,16 @@ import re
 import ast
 from typing import Dict, List, Optional
 from dataclasses import dataclass
-
-from matplotlib.pylab import f
-
-from python_dev_tool.core.globals import FRAMEWORK_SIGNATURES, REQUIREMENTS_FILES, VERSION_PATTERNS
+from pathlib import Path
 
 # 3rd party imports
 
 # local imports
-
-
+from python_dev_tool.core.globals import (
+    FRAMEWORK_SIGNATURES,
+    REQUIREMENTS_FILES,
+    VERSION_PATTERNS,
+)
 
 
 @dataclass
@@ -29,26 +29,30 @@ class FrameworkInfo:
     confidence: float = 0.0
     main_file: Optional[str] = None
     config_files: List[str] = None
-    dependecies: List[str] = None
-    commands: List[str] = None
+    dependencies: List[str] = None
+    commands: Dict[str, str] = None
 
     def __post_init__(self):
         """Post initialization."""
         if self.config_files is None:
             self.config_files = []
-        if self.dependecies is None:
-            self.dependecies = []
+        if self.dependencies is None:
+            self.dependencies = []
         if self.commands is None:
             self.commands = {}
 
 class FrameworkDetector:
     """Detects and analyzes Python frameworks."""
 
-    def __init__(self, project_root: str = "."):
-        self.project_root = project_root
+    def __init__(
+        self, project_root: str = ".", host: str = "127.0.0.1", port: int = 8000
+    ):
+        self.project_root = Path(project_root)
+        self.host = host
+        self.port = str(port)
         self.detected_frameworks: List[FrameworkInfo] = []
 
-    def detact_framework(self) -> Optional[FrameworkInfo]:
+    def detect_framework(self) -> Optional[FrameworkInfo]:
         """Detect the primary framework used in the project."""
         self.detected_frameworks = []
 
@@ -57,13 +61,18 @@ class FrameworkDetector:
             confidence = self._calculate_confidence(framework_name, signature)
 
             if confidence > 0.1: # minimum confidence threshold
+                # format command with port and host
+                commands  = {
+                    key: cmd.format(host=self.host, port=self.port)
+                    for key, cmd in signature.get("commands", {}).items()
+                }
                 framework_info = FrameworkInfo(
                     name=framework_name,
                     confidence=confidence,
                     main_file=self._find_main_file(framework_name, signature),
                     config_files=self._find_config_files(framework_name, signature),
                     dependencies=signature.get("requirements", []),
-                    commands=signature.get("commands", {}),
+                    commands=commands,
                 )
 
                 # try to detect version
@@ -250,7 +259,7 @@ class FrameworkDetector:
             if '*' in file_pattern:
                 # Handle glob patterns
                 matches =  list(self.project_root.glob(file_pattern))
-                config.extend(
+                config_files.extend(
                     str(m.relative_to(self.project_root))
                     for m in matches
                 )

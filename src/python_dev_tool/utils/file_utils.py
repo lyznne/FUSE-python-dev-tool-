@@ -212,3 +212,28 @@ class FileUtils:
         """Get file name with or without extension."""
         path = Path(path)
         return path.name if with_extension else path.stem
+
+    @staticmethod
+    def get_folder_size(folder_path: Union[str, Path]) -> int:
+        """Get the size of a folder in bytes.
+        Args:
+            folder_path: Path to the folder
+
+        Returns:
+            int: Total size in bytes
+        """
+        total_size = 0
+        folder_path = Path(folder_path)
+
+        if not folder_path.exists():
+            raise FileNotFoundError(f"Folder not found: {folder_path}")
+
+        for item  in folder_path.rglob('*'):
+            if item.is_file():
+                try:
+                    total_size += item.stat().st_size
+                except (OSError, FileNotFoundError) as e:
+                    logger.warning(f"Could not get size for {item}: {e}")
+                    continue
+                
+        return total_size

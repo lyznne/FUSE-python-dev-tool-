@@ -577,9 +577,18 @@ def status(
         )
 
         from python_dev_tool.core.app import DevToolApp
+        from python_dev_tool.cli.commands.status import StatusCommand
+
+
+        status_cmd = StatusCommand(
+            project_path=project_path, detailed=detailed, check_deps=True
+        )
+        status_info = status_cmd.run()
 
         app_instance = DevToolApp(project_path)
-        status_info = app_instance.get_status()
+        app_status = app_instance.get_status()
+
+        status_info.update(app_status)
 
         # Project info
         info_table = Table(show_header=False, box=None, padding=(0, 1))

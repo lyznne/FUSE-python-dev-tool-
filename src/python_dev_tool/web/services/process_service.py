@@ -365,7 +365,7 @@ class ProcessService:
         """Get all processes."""
         return list(self.processes.values())
 
-    async def get_processes_by_project(self, project_id: str) -> List[Process]:
+    async def get_processes_by_source(self, project_id: str) -> List[Process]:
         """Get processes for a specific project."""
         return [
             process for process in self.processes.values()

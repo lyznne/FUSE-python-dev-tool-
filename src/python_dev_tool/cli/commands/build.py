@@ -15,7 +15,7 @@ from rich.console import Console
 # local imports
 from python_dev_tool.core.exceptions import DevToolError
 from python_dev_tool.core.framework_detector import FrameworkDetector
-from python_dev_tool.utils.network_utils import get_folder_size
+from python_dev_tool.utils.file_utils import FileUtils
 
 @dataclass
 class BuildOptions:
@@ -65,7 +65,7 @@ class BuildCommand:
             self._generate_requirements(output_path)
 
             # Calculate build size
-            size_info = get_folder_size(output_path)
+            size_info = FileUtils.get_folder_size(output_path)
 
             return {
                 "success": True,
