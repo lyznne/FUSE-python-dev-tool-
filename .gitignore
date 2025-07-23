@@ -1,0 +1,102 @@
+## My setup - to be removed later
+TODO.md
+ROADMAP.md
+TECH.md
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+*.eggs/
+dist/
+build/
+*.manifest
+*.spec
+*.log
+*.tmp
+
+# === Virtual Environments ===
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+*.env
+.env.*
+.fuse_env/
+
+# === Jupyter Notebooks ===
+.ipynb_checkpoints
+
+# === Ruff ===
+.cache/
+ruff_cache/
+
+# === Pytest ===
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+nosetests.xml
+coverage.xml
+test-results.xml
+
+# === Mypy ===
+.mypy_cache/
+.dmypy.json
+
+# === PyInstaller ===
+*.manifest
+*.spec
+
+# === Frontend (Node, Vite) ===
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.parcel-cache/
+frontend/.turbo/
+
+# === React/Build Output ===
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+frontend/.eslintcache
+
+# === Docker ===
+docker-compose.override.yml
+.dockerignore
+
+# === IDEs and Editors ===
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# === OS Files ===
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# === Env Configuration ===
+*.env
+.env
+.envrc
+
+# === Misc ===
+*.bak
+*.swp
+*.orig
+*.rej
+*.tmp
+
+# === Test Artifacts ===
+test-output/
+*.log
+*.pytest_cache/
+
+# === EditorConfig Backup ===
+.editorconfig.sav
