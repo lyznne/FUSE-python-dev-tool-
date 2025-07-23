@@ -7,7 +7,7 @@ config.py - Config File
 import os
 import toml
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
@@ -146,7 +146,7 @@ class DevToolConfig(BaseSettings):
     python_version: str = Field(default="3.8+", description="Python version")
     version: str = Field(default="1.0.0", description="Project version")
 
-   
+
 
     # Components settings
     server: ServerConfig = Field(default_factory=ServerConfig)
@@ -380,3 +380,16 @@ class Config: # class name ConfigManager
 
         if not config_file.exists():
             raise ConfigError(f"Config file not found at: {config_file}")
+
+    @classmethod
+    def set_config_file(cls, config_path: Union[str, Path]) -> None:
+        if isinstance(config_path, str):
+            config_path = Path(config_path)
+1
+        if not isinstance(config_path, Path):
+            raise TypeError(f"Expected a Path, got {type(config_path).__name__}")
+
+        if not config_path.exists():
+            raise FileNotFoundError(f"Config file not found: {config_path}")
+
+        cls._config_file = config_path

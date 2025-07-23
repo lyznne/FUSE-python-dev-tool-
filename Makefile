@@ -35,6 +35,8 @@ EMOJI_SUCCESS     := ✅
 EMOJI_ERROR       := ❌
 EMOJI_WARNING     := ⚠️
 EMOJI_PUBLISH     := 📦
+EMOJI_VERSION     := 🏷️
+EMOJI_LOCAL       := 🏠
 
 # Simple ASCII alternatives
 # EMOJI_ROCKET      := [*]
@@ -64,15 +66,26 @@ help:
 	@echo -e "  $(GREEN)make dev$(RESET)              $(EMOJI_DEV) Start dev server with live reload"
 	@echo -e "  $(GREEN)make watch$(RESET)            $(EMOJI_WATCH) Watch files & reload on changes"
 	@echo -e "  $(GREEN)make cli$(RESET)              $(EMOJI_CLI) Run CLI in interactive mode"
+	@echo -e "  $(GREEN)make local-build$(RESET)      $(EMOJI_LOCAL) Build and install tool locally for testing"
 
 	@echo -e "$(BOLD)$(EMERALD)[ Build & Release ]$(RESET)"
 	@echo -e "  $(ORANGE)make build$(RESET)           $(EMOJI_BUILD) Build the package"
 	@echo -e "  $(ORANGE)make release$(RESET)         $(EMOJI_RELEASE) Create new release"
+	@echo -e "  $(ORANGE)make hatch-build$(RESET)     $(EMOJI_BUILD) Build package with hatch"
+	@echo -e "  $(ORANGE)make hatch-publish$(RESET)   $(EMOJI_PUBLISH) Publish package with hatch"
+
+	@echo -e "$(BOLD)$(EMERALD)[ Version Management ]$(RESET)"
+	@echo -e "  $(PURPLE)make version$(RESET)         $(EMOJI_VERSION) Show current version"
+	@echo -e "  $(PURPLE)make version-patch$(RESET)   $(EMOJI_VERSION) Bump patch version (1.0.0 -> 1.0.1)"
+	@echo -e "  $(PURPLE)make version-minor$(RESET)   $(EMOJI_VERSION) Bump minor version (1.0.1 -> 1.1.0)"
+	@echo -e "  $(PURPLE)make version-major$(RESET)   $(EMOJI_VERSION) Bump major version (1.1.0 -> 2.0.0)"
+	@echo -e "  $(PURPLE)make version-set VER=x.y.z$(RESET) $(EMOJI_VERSION) Set specific version"
 
 	@echo -e "$(BOLD)$(EMERALD)[ Testing & QA ]$(RESET)"
 	@echo -e "  $(CRIMSON)make test$(RESET)           $(EMOJI_TEST) Run unit + integration tests"
 	@echo -e "  $(CRIMSON)make test TEST_FILE=path$(RESET) $(EMOJI_TEST) Run specific test file"
 	@echo -e "  $(CRIMSON)make lint$(RESET)           $(EMOJI_LINT) Run ruff linter + type check"
+	@echo -e "  $(CRIMSON)make ruff-check$(RESET)     $(EMOJI_LINT) Run ruff check on current directory"
 	@echo -e "  $(CRIMSON)make format$(RESET)         $(EMOJI_FORMAT) Auto-format using ruff"
 
 	@echo -e "$(BOLD)$(EMERALD)[ Deploy & Docs ]$(RESET)"
@@ -109,6 +122,13 @@ cli:
 	@echo -e "$(GREEN)$(EMOJI_CLI) Running interactive CLI...$(RESET)"
 	@python src/python_dev_tool/cli/main.py
 
+.PHONY: local-build
+local-build:
+	@echo -e "$(GREEN)$(EMOJI_LOCAL) Building and installing tool locally for testing...$(RESET)"
+	@pip install -e . || (echo -e "$(CRIMSON)$(EMOJI_ERROR) Local build failed!$(RESET)" && exit 1)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Local build and installation complete!$(RESET)"
+	@echo -e "$(BLUE)$(EMOJI_CLI) You can now test the tool locally$(RESET)"
+
 # -------------------------------------
 #  Build & Release
 # -------------------------------------
@@ -119,11 +139,60 @@ build:
 	@python scripts/build.py
 	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Build completed successfully!$(RESET)"
 
+.PHONY: hatch-build
+hatch-build:
+	@echo -e "$(ORANGE)$(EMOJI_BUILD) Building package with hatch...$(RESET)"
+	@hatch build || (echo -e "$(CRIMSON)$(EMOJI_ERROR) Hatch build failed!$(RESET)" && exit 1)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Hatch build completed successfully!$(RESET)"
+
+.PHONY: hatch-publish
+hatch-publish:
+	@echo -e "$(ORANGE)$(EMOJI_PUBLISH) Publishing package with hatch...$(RESET)"
+	@hatch publish || (echo -e "$(CRIMSON)$(EMOJI_ERROR) Hatch publish failed!$(RESET)" && exit 1)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Package published successfully!$(RESET)"
+
 .PHONY: release
 release:
 	@echo -e "$(ORANGE)$(EMOJI_RELEASE) Releasing new version...$(RESET)"
 	@python scripts/release.py
 	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Release created successfully!$(RESET)"
+
+# -------------------------------------
+#  Version Management
+# -------------------------------------
+
+.PHONY: version
+version:
+	@echo -e "$(PURPLE)$(EMOJI_VERSION) Current version:$(RESET)"
+	@hatch version
+
+.PHONY: version-patch
+version-patch:
+	@echo -e "$(PURPLE)$(EMOJI_VERSION) Bumping patch version...$(RESET)"
+	@hatch version patch
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Version bumped to: $$(hatch version)$(RESET)"
+
+.PHONY: version-minor
+version-minor:
+	@echo -e "$(PURPLE)$(EMOJI_VERSION) Bumping minor version...$(RESET)"
+	@hatch version minor
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Version bumped to: $$(hatch version)$(RESET)"
+
+.PHONY: version-major
+version-major:
+	@echo -e "$(PURPLE)$(EMOJI_VERSION) Bumping major version...$(RESET)"
+	@hatch version major
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Version bumped to: $$(hatch version)$(RESET)"
+
+.PHONY: version-set
+version-set:
+ifndef VER
+	@echo -e "$(CRIMSON)$(EMOJI_ERROR) Please specify version: make version-set VER=1.2.3$(RESET)"
+	@exit 1
+endif
+	@echo -e "$(PURPLE)$(EMOJI_VERSION) Setting version to $(VER)...$(RESET)"
+	@hatch version "$(VER)"
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Version set to: $$(hatch version)$(RESET)"
 
 # -------------------------------------
 #   Tests and Linting
@@ -142,6 +211,12 @@ lint:
 	@echo -e "$(CRIMSON)$(EMOJI_LINT) Type checking with mypy...$(RESET)"
 	@mypy src/ || (echo -e "$(CRIMSON)$(EMOJI_ERROR) Type checking failed!$(RESET)" && exit 1)
 	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Linting and type checking passed!$(RESET)"
+
+.PHONY: ruff-check
+ruff-check:
+	@echo -e "$(CRIMSON)$(EMOJI_LINT) Running ruff check on current directory...$(RESET)"
+	@ruff check . || (echo -e "$(CRIMSON)$(EMOJI_ERROR) Ruff check failed!$(RESET)" && exit 1)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Ruff check passed!$(RESET)"
 
 .PHONY: format
 format:
