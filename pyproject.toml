@@ -7,7 +7,7 @@ name = "fuse"
 version = "0.0.1"
 description = "A comprehensive development tool for Python applications with live server, monitoring, and deployment capabilities"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = { file = "LICENSE.md" }
 authors = [{ name = "Enos Lyznne", email = "emuthiani26@gmail.com" }]
 maintainers = [{ name = "Enos Lyznne", email = "emuthiani26@gmail.com" }]
 keywords = [
@@ -31,9 +31,8 @@ classifiers = [
     "Framework :: FastAPI",
     "Framework :: Flask",
     "Framework :: Pyramid",
-    "Framework :: Tornado",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: AGPL  License",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -127,7 +126,8 @@ path = "src/python_dev_tool/__init__.py"
 include = [
     "/src",
     "/README.md",
-    "/LICENSE",
+    "/LICENSE.md",
+    "/COMMERCIAL_LICENSE.md",
     "/pyproject.toml",
     "/CHANGELOG.md",
     "/docs",
