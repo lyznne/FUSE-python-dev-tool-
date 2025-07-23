@@ -96,17 +96,16 @@ class StatusCommand:
         if not config_path.exists():
             raise DevToolError(f"Config file not found at: {config_path}")
 
-        # Check other essential files (non-fatal warnings)
-        essential_files = [
-            ("pyproject.toml", "Project configuration"),
-            ("requirements.txt", "Dependencies file"),
-        ]
-        missing_files = [f"{desc} (expected at: {project_path / file_path})"
-                        for file_path, desc in essential_files if not (project_path / file_path).exists()]
-        if missing_files:
-            self.console.print(f"[yellow]Warning: Missing files: {', '.join(missing_files)}[/yellow]")
+        # Validate that the config can be loaded
+        try:
+            from python_dev_tool.core.config import Config
+            config = Config.load_project_config(project_path)
+            if not config:
+                self.console.print("[yellow]Warning: Config file exists but could not be loaded properly[/yellow]")
+        except Exception as e:
+            self.console.print(f"[yellow]Warning: Config validation failed: {e}[/yellow]")
 
-        # Check other essential files
+        # Check other essential files (non-fatal warnings)
         essential_files = [
             ("pyproject.toml", "Project configuration"),
             ("requirements.txt", "Dependencies file"),
@@ -119,8 +118,8 @@ class StatusCommand:
                 missing_files.append(f"{desc} (expected at: {full_path})")
 
         if missing_files:
-            # Make this non-fatal for now, just warnings
-            self.console.print(f"[yellow]Warning: {', '.join(missing_files)}[/yellow]")
+            self.console.print(f"[yellow]Warning: Missing files: {', '.join(missing_files)}[/yellow]")
+
 
 
 
@@ -162,18 +161,30 @@ class StatusCommand:
 
     def _get_framework_info(self) -> Dict[str, Any]:
         """Get detailed framework information."""
-        detector = FrameworkDetector(self.options.project_path)
-        framework_info = detector.detect_framework()
-        if not framework_info:
-            return {}
+        try:
+            detector = FrameworkDetector(self.options.project_path)
+            framework_info = detector.detect_framework()
+            if not framework_info:
+                return {
+                    "framework": "unknown",
+                    "framework_version": "None",
+                    "framework_confidence": 0.0
+                }
 
-        return {
-            "framework": framework_info.name,
-            "framework_version": framework_info.version,
-            "framework_confidence": framework_info.confidence,
-            "main_file": framework_info.main_file,
-            "config_files": framework_info.config_files,
-        }
+            return {
+                "framework": framework_info.name,
+                "framework_version": framework_info.version or "None",
+                "framework_confidence": framework_info.confidence,
+                "main_file": framework_info.main_file,
+                "config_files": framework_info.config_files or [],
+            }
+        except Exception as e:
+            return {
+                "framework": "error",
+                "framework_version": "None",
+                "framework_confidence": 0.0,
+                "error": str(e)
+            }
 
     def _get_process_status(self) -> Dict[str, Any]:
         """Get detailed process status."""
@@ -210,10 +221,31 @@ class StatusCommand:
 
     def _get_dependency_info(self) -> Dict[str, Any]:
         """Get comprehensive dependency information."""
-        from python_dev_tool.core.config import Config
-        config = Config.load_project_config(self.options.project_path)
-        commands = (config or {}).get("dependencies", {}).keys()
-        return DependencyUtils.check_dependencies(commands)
+        try:
+            from python_dev_tool.core.config import Config
+            config = Config.load_project_config(self.options.project_path)
+
+
+            if not config:
+                return {"status": "no_config", "vulnerable": [], "outdated": []}
+
+            # Get dependency list properly from config
+            dependencies = []
+            if isinstance(config, dict):
+                deps = config.get("dependencies", {})
+                if isinstance(deps, dict):
+                    dependencies = list(deps.keys())
+                elif isinstance(deps, list):
+                    dependencies = deps
+
+            if not dependencies:
+                return {"status": "no_dependencies", "vulnerable": [], "outdated": []}
+
+            return DependencyUtils.check_dependencies(dependencies)
+
+        except Exception as e:
+            self.console.print(f"[red]Status error: Invalid configuration: {e}[/red]")
+            return {"status": "config_error", "error": str(e), "vulnerable": [], "outdated": []}
 
     def _get_performance_metrics(self) -> Dict[str, Any]:
         """Get real performance metrics."""

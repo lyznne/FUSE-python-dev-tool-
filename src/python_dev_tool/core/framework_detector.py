@@ -49,7 +49,8 @@ class FrameworkDetector:
     ):
         self.project_root = Path(project_root)
         self.host = host
-        self.port = str(port)
+        self.port = port
+        
         self.detected_frameworks: List[FrameworkInfo] = []
 
     def detect_framework(self) -> Optional[FrameworkInfo]:

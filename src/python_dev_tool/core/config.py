@@ -140,10 +140,13 @@ class DevToolConfig(BaseSettings):
     """Main configuration class of FUSE."""
 
     # project settings
-    project_name: str = PROJECT_NAME
-    project_root: Path = PROJECT_ROOT
-    framework: Optional[str] = FRAMEWORK
-    python_version: str = PYTHON_VERSION
+    project_name: str = Field(default=PROJECT_NAME, description="Project name")
+    project_root: Optional[Path] = Field(default=None, description="Project root path")
+    framework: str = Field(default="", description="Framework name")
+    python_version: str = Field(default="3.8+", description="Python version")
+    version: str = Field(default="1.0.0", description="Project version")
+
+   
 
     # Components settings
     server: ServerConfig = Field(default_factory=ServerConfig)

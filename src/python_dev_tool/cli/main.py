@@ -631,7 +631,213 @@ def status(
         raise typer.Exit(1)
 
 
-# --- continue
 
+# Command: help
+
+
+
+# Command: update
+@app.command()
+def update(
+    version: Optional[str] = typer.Option(
+        None, "--version", "-V", help="Specific version to install (e.g., 1.2.3)"
+    ),
+    pre_release: bool = typer.Option(
+        False, "--pre-release", "--pre", help="Include pre-release versions"
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="Force update even if already up to date"
+    ),
+    check_only: bool = typer.Option(
+        False, "--check", "-c", help="Check for updates without installing"
+    ),
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose output for debugging"
+    ),
+) -> None:
+    """
+    🔄 Update the python-dev-tool to the latest version
+
+    Features:
+    • Check for latest stable or pre-release versions
+    • Update to specific version
+    • Backup current installation
+    • Rollback on failure
+    • Check-only mode for CI/CD
+    """
+    try:
+        console.print(
+            Panel.fit(
+                "[bold blue]🔄 Python Dev Tool Updater[/bold blue]",
+                style="blue",
+            )
+        )
+
+        # Import update command
+        from python_dev_tool.cli.commands.update import UpdateCommand
+
+        update_cmd = UpdateCommand(
+            target_version=version,
+            include_pre_release=pre_release,
+            force=force,
+            check_only=check_only,
+            verbose=verbose,
+        )
+
+        if check_only:
+            # Just check for updates
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                task = progress.add_task(
+                    "[bold blue]Checking for updates...", total=None
+                )
+                result = update_cmd.check_for_updates()
+                progress.update(task, description="✓ Update check complete")
+
+            if result["update_available"]:
+                console.print(f"\n[bold yellow]📦 Update available![/bold yellow]")
+                console.print(
+                    f"Current version: [bold red]{result['current_version']}[/bold red]"
+                )
+                console.print(
+                    f"Latest version:  [bold green]{result['latest_version']}[/bold green]"
+                )
+
+                if result.get("changelog"):
+                    console.print(f"\n[bold blue]What's new:[/bold blue]")
+                    for change in result["changelog"][:3]:  # Show top 3 changes
+                        console.print(f"  • {change}")
+
+                console.print(
+                    f"\nRun [bold]fuse update[/bold] to install the latest version"
+                )
+            else:
+                console.print(
+                    f"\n[bold green]✅ You're already running the latest version ({result['current_version']})[/bold green]"
+                )
+
+            return
+
+        # Perform the update
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            # Check for updates
+            check_task = progress.add_task(
+                "[bold blue]Checking for updates...", total=None
+            )
+            update_info = update_cmd.check_for_updates()
+            progress.update(check_task, description="✓ Update check complete")
+
+            if not update_info["update_available"] and not force:
+                progress.update(check_task, description="✓ Already up to date")
+                console.print(
+                    f"\n[bold green]✅ Already running the latest version ({update_info['current_version']})[/bold green]"
+                )
+                return
+
+            # Show update information
+            if update_info["update_available"]:
+                console.print(
+                    f"\n[bold yellow]📦 Updating from {update_info['current_version']} to {update_info['latest_version']}[/bold yellow]"
+                )
+
+            # Create backup
+            backup_task = progress.add_task("[bold blue]Creating backup...", total=None)
+            backup_result = update_cmd.create_backup()
+            progress.update(backup_task, description="✓ Backup created")
+
+            # Download and install update
+            download_task = progress.add_task(
+                "[bold blue]Downloading update...", total=None
+            )
+            try:
+                download_result = update_cmd.download_update(
+                    update_info["latest_version"]
+                )
+                progress.update(download_task, description="✓ Download complete")
+
+                # Install update
+                install_task = progress.add_task(
+                    "[bold blue]Installing update...", total=None
+                )
+                install_result = update_cmd.install_update(
+                    download_result["package_path"]
+                )
+                progress.update(install_task, description="✓ Installation complete")
+
+                # Verify installation
+                verify_task = progress.add_task(
+                    "[bold blue]Verifying installation...", total=None
+                )
+                verification_result = update_cmd.verify_installation()
+                progress.update(verify_task, description="✓ Verification complete")
+
+                if verification_result["success"]:
+                    console.print(
+                        f"\n[bold green]🎉 Successfully updated to version {verification_result['new_version']}![/bold green]"
+                    )
+
+                    # Show what's new
+                    if update_info.get("changelog"):
+                        console.print(
+                            f"\n[bold blue]🆕 What's new in {verification_result['new_version']}:[/bold blue]"
+                        )
+                        for change in update_info["changelog"][
+                            :5
+                        ]:  # Show top 5 changes
+                            console.print(f"  • {change}")
+
+                    # Clean up backup if successful
+                    update_cmd.cleanup_backup(backup_result["backup_path"])
+                    console.print(f"\n[dim]Backup cleaned up[/dim]")
+
+                else:
+                    raise DevToolError("Installation verification failed")
+
+            except Exception as e:
+                # Rollback on failure
+                progress.add_task(
+                    "[bold red]Update failed, rolling back...", total=None
+                )
+                rollback_result = update_cmd.rollback(backup_result["backup_path"])
+
+                if rollback_result["success"]:
+                    console.print(
+                        f"\n[bold yellow]⚠️  Update failed but successfully rolled back to {rollback_result['restored_version']}[/bold yellow]"
+                    )
+                else:
+                    console.print(
+                        f"\n[bold red]❌ Update and rollback failed! Manual intervention required.[/bold red]"
+                    )
+                    console.print(f"Backup location: {backup_result['backup_path']}")
+
+                raise DevToolError(f"Update failed: {str(e)}")
+
+        # Show next steps
+        console.print(f"\n[bold blue]💡 Next steps:[/bold blue]")
+        console.print("  • Restart any running development servers")
+        console.print(
+            "  • Run [bold]fuse status[/bold] to verify everything is working"
+        )
+        console.print("  • Check the changelog for breaking changes")
+
+    except DevToolError as e:
+        error_console.print(f"[bold red]Update failed: {e}[/bold red]")
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Update cancelled by user.[/yellow]")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[bold red]Unexpected error occurred: {e}[/bold red]")
+        if verbose:
+            console.print_exception()
+        raise typer.Exit(1)
+#
 if __name__ == "__main__":
     app()

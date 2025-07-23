@@ -13,9 +13,7 @@ __license__ = "AGPL-3.0"
 
 from .core.app import DevToolApp
 from .core.config import Config, DevToolConfig
-from .core.exceptions import DevToolError, ConfigError, ProcessError, FrameworkError
-
-
+from .core.exceptions import ConfigError, DevToolError, FrameworkError, ProcessError
 
 __all__ = [
     "__version__",
