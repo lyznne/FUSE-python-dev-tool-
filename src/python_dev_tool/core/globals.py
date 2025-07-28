@@ -32,12 +32,7 @@ PYTHON_VERSION     =  "3.13",
 
 
 # suppported frameworks
-SUPPORTED_FRAMEWORKS = [
-    "django",
-    "flask",
-    "fastapi",
-    "streamlit",
-]
+SUPPORTED_FRAMEWORKS = ["django", "flask", "fastapi", "streamlit", "tornado", "sanic"]
 
 
 # config file names
@@ -177,3 +172,34 @@ REQUIREMENTS_FILES = [
         "environment.yml",
         "poetry.lock",
 ]
+
+FRAMEWORK_PATTERNS = {
+    "django": {
+        "files": ["manage.py", "wsgi.py", "asgi.py"],
+        "directories": ["templates", "static", "migrations"],
+        "config_files": ["settings.py", "urls.py"],
+        "imports": ["django"],
+        "patterns": [r"from\s+django", r"import\s+django"],
+    },
+    "flask": {
+        "files": ["app.py", "main.py"],
+        "directories": ["templates", "static"],
+        "config_files": ["config.py"],
+        "imports": ["flask"],
+        "patterns": [r"from\s+flask", r"Flask\(__name__\)"],
+    },
+    "fastapi": {
+        "files": ["main.py", "app.py"],
+        "directories": ["app", "routers"],
+        "config_files": [],
+        "imports": ["fastapi"],
+        "patterns": [r"from\s+fastapi", r"FastAPI\("],
+    },
+    "streamlit": {
+        "files": ["*.py"],
+        "directories": ["pages", ".streamlit"],
+        "config_files": ["config.toml"],
+        "imports": ["streamlit"],
+        "patterns": [r"import\s+streamlit", r"st\."],
+    },
+}

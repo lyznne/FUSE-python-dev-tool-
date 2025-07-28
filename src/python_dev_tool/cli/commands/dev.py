@@ -4,11 +4,11 @@ CLI Commands - Dev Command
 """
 
 # sys imports
-import sys
-import os
 import asyncio
-from pathlib import Path
+import os
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 # 3rd party imports
@@ -18,6 +18,8 @@ from rich.table import Table
 # local imports
 from python_dev_tool.core.events import EventBus
 from python_dev_tool.core.exceptions import DevToolError
+from python_dev_tool.core.file_watcher import FileWatcher
+from python_dev_tool.core.framework_detector import FrameworkDetector
 from python_dev_tool.core.globals import (
     APP_HOST,
     APP_OPEN_BROWSER,
@@ -25,10 +27,8 @@ from python_dev_tool.core.globals import (
     APP_UI_PORT,
 )
 from python_dev_tool.core.process_manager import ProcessManager
-from python_dev_tool.core.file_watcher import FileWatcher
-from python_dev_tool.core.framework_detector import FrameworkDetector
-from python_dev_tool.web.app import create_dev_ui_app
 from python_dev_tool.utils.network_utils import NetworkUtils
+from python_dev_tool.web.app import create_dev_ui_app
 
 
 @dataclass

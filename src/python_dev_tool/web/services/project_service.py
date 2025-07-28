@@ -7,24 +7,23 @@ import asyncio
 import logging
 import os
 import shutil
-from pathlib import Path
-from typing import Dict, List, Optional, Any
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from dataclasses import dataclass, asdict
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import toml
-from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
-from python_dev_tool.core.framework_detector import FrameworkDetector
 from python_dev_tool.core.config import Config
 from python_dev_tool.core.events import EventEmitter
 from python_dev_tool.core.exceptions import ProjectError
-from python_dev_tool.web.models.project import Project, ProjectStatus
+from python_dev_tool.core.framework_detector import FrameworkDetector
 from python_dev_tool.utils.file_utils import FileUtils
 from python_dev_tool.utils.validation import ValidationUtils
-
+from python_dev_tool.web.models.project import Project, ProjectStatus
 
 
 class ProjectEventType(Enum):
@@ -95,11 +94,18 @@ class ProjectService:
         self.projects: Dict[str, Project] = {}
         self.watchers: Dict[str, Observer] = {}
         self.metrics: Dict[str, ProjectMetrics] = {}
-        self.config = Config()
+        self.config = None
         self.event_emitter = EventEmitter()
         self.framework_detector = FrameworkDetector()
         self.file_utils = FileUtils()
         self.validation_utils = ValidationUtils()
+
+    @property
+    def config(self):
+        if self._config is None:
+            self._config = Config()
+        return self._config
+
 
     async def initialize(self):
         """Initialize the project service."""

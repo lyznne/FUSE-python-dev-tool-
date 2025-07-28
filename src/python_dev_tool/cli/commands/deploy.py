@@ -4,16 +4,17 @@ CLI - Deploy Command
 """
 
 # sys imports
-from pathlib import Path
-from typing import Dict, Any, Optional
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 # 3rd party imports
 from rich.console import Console
 
+from python_dev_tool.core.config import Config
+
 # local imports
 from python_dev_tool.core.exceptions import DevToolError
-from python_dev_tool.core.config import Config
 
 
 @dataclass

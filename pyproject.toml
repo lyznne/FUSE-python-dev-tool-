@@ -104,9 +104,11 @@ Issues = "https://github.com/lyznne/python-dev-tool/issues"
 Changelog = "https://github.com/lyznne/python-dev-tool/blob/main/CHANGELOG.md"
 
 [project.scripts]
-python-dev-tool = "python_dev_tool.cli.main:main"
-fuse = "python_dev_tool.cli.main:main"
-devtool = "python_dev_tool.cli.main:main"
+python-dev-tool = "python_dev_tool.cli.fuse:app"
+fuse = "python_dev_tool.cli.fuse:app"
+devtool = "python_dev_tool.cli.fuse:app"
+FUSE  =  "python_dev_tool.cli.fuse:app"
+
 
 [project.entry-points."python_dev_tool.frameworks"]
 django = "python_dev_tool.frameworks.django:DjangoFramework"

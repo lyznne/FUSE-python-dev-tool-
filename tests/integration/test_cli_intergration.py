@@ -3,17 +3,19 @@ FUSE - (python dev tool) - Integration Tests
 Integration Tests - Development Server
 """
 
+import os
+
 import pytest
+
 from python_dev_tool.cli.commands.dev import DevCommand
 from python_dev_tool.web.app import create_dev_ui_app
-import os
 
 
 @pytest.mark.asyncio
 async def test_dev_server_start(tmp_path):
     """Test that the dev server can start properly."""
     # Create proper config file structure
-    config_dir = tmp_path / ".devtool"
+    config_dir = tmp_path / ".fuse"
     config_dir.mkdir()
     config_path = config_dir / "config.toml"
     config_path.write_text("""
@@ -55,7 +57,7 @@ async def test_dev_server_start(tmp_path):
 async def test_invalid_port_config(tmp_path):
     """Test handling of invalid port configuration."""
     # Create proper config file structure
-    config_dir = tmp_path / ".devtool"
+    config_dir = tmp_path / ".fuse"
     config_dir.mkdir()
     config_path = config_dir / "config.toml"
     config_path.write_text("""

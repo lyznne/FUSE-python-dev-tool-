@@ -120,7 +120,7 @@ watch:
 .PHONY: cli
 cli:
 	@echo -e "$(GREEN)$(EMOJI_CLI) Running interactive CLI...$(RESET)"
-	@python src/python_dev_tool/cli/main.py
+	@python src/python_dev_tool/cli/fuse.py
 
 .PHONY: local-build
 local-build:

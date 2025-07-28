@@ -4,7 +4,8 @@ MAIN - Unit Tests for the CLI commands of the Python Dev Tool.
 """
 import pytest
 from typer.testing import CliRunner
-from python_dev_tool.cli.main import app
+
+from python_dev_tool.cli.fuse import app
 
 runner = CliRunner()
 

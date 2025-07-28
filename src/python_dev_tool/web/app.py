@@ -4,36 +4,42 @@ app.py - Web App
 """
 
 # sys imports
+import logging
 import os
 from contextlib import asynccontextmanager
-import logging
 from pathlib import Path
 
 # 3rd party imports
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 
+from python_dev_tool.core.config import Config
 
 # local imports
 from python_dev_tool.core.events import EventEmitter
-from python_dev_tool.web.api import logs, processes, projects, files, websocket, commands
-from python_dev_tool.web.middleware.cors import setup_cors
+from python_dev_tool.web.api import (
+    commands,
+    files,
+    logs,
+    processes,
+    projects,
+    websocket,
+)
 from python_dev_tool.web.middleware.auth import AuthMiddleware
+from python_dev_tool.web.middleware.cors import setup_cors
 from python_dev_tool.web.middleware.rate_limit import RateLimitMiddleware
 from python_dev_tool.web.middleware.security import SecurityMiddleware
-from python_dev_tool.web.services.project_service import ProjectService
-from python_dev_tool.web.services.process_service import ProcessService
 from python_dev_tool.web.services.log_service import LogService
-from python_dev_tool.core.config import Config
+from python_dev_tool.web.services.process_service import ProcessService
 
 # configure Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Global variables
-project_service = ProjectService()
+project_service = None # triggers config load at import time!
 process_service = ProcessService()
-log_service = LogService()
+log_service = None
 
 
 @asynccontextmanager
@@ -56,6 +62,17 @@ async def lifespan(app: FastAPI):
 
 def create_dev_ui_app(project_path: Path) -> FastAPI:
     """Create the development UI app."""
+    try:
+        config = Config.load_from_project(project_path)
+    except Exception:
+        config = Config()
+
+    # Ensure logs directory exists
+    log_dir = config.logging.dir if hasattr(config, "logging") else ".fuse/logs"
+    (project_path / log_dir).mkdir(parents=True, exist_ok=True)
+
+    log_service = LogService(config)
+    process_service = ProcessService(config)
 
     # get project path
     project_path_str = os.getenv("DEVTOOL_PROJECT_PATH", project_path)

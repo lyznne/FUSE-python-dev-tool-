@@ -6,23 +6,27 @@ Handles log collection, processing, storage, and real-time streaming
 import json
 import logging
 import re
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional, Any, Callable, AsyncGenerator
-from dataclasses import dataclass, asdict
+from collections import defaultdict, deque
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional
+
 import aiofiles
-from collections import defaultdict, deque
+from numpy import isin
 
-
-from python_dev_tool.web.models.log import LogEntry, LogLevel, LogSource
-from python_dev_tool.utils.async_utils import AsyncUtils
-from python_dev_tool.utils.string_utils import StringUtils
+from python_dev_tool.core.config import Config
 from python_dev_tool.core.events import EventEmitter
 from python_dev_tool.core.exceptions import LogError
+from python_dev_tool.utils.async_utils import AsyncUtils
+from python_dev_tool.utils.string_utils import StringUtils
+from python_dev_tool.web.models.log import LogEntry, LogLevel, LogSource
+
 
 class LogEventType(Enum):
     """Log event types."""
+
     LOG_ENTRY_CREATED = "log_entry_created"
     ERROR_DETECTED = "error_detected"
     WARNING_DETECTED = "warning_detected"
@@ -34,6 +38,7 @@ class LogEventType(Enum):
 @dataclass
 class LogFilter:
     """Log filtering configuration."""
+
     levels: Optional[List[LogLevel]] = None
     sources: Optional[List[LogSource]] = None
     project_ids: Optional[List[str]] = None
@@ -48,6 +53,7 @@ class LogFilter:
 @dataclass
 class LogStats:
     """Log statistics."""
+
     total_entries: int
     error_count: int
     warning_count: int
@@ -62,6 +68,7 @@ class LogStats:
 @dataclass
 class LogPattern:
     """Log pattern for monitoring."""
+
     name: str
     pattern: str
     level: LogLevel
@@ -80,25 +87,25 @@ class LogProcessor:
 
         # Common error patterns
         self.error_patterns = [
-            r'(?i)error|exception|traceback|failed|failure',
-            r'(?i)connection\s+(refused|timeout|error)',
-            r'(?i)permission\s+denied',
-            r'(?i)file\s+not\s+found',
-            r'(?i)syntax\s+error',
-            r'(?i)import\s+error',
-            r'(?i)module\s+not\s+found',
-            r'(?i)database\s+error',
-            r'(?i)authentication\s+failed',
-            r'(?i)access\s+denied'
+            r"(?i)error|exception|traceback|failed|failure",
+            r"(?i)connection\s+(refused|timeout|error)",
+            r"(?i)permission\s+denied",
+            r"(?i)file\s+not\s+found",
+            r"(?i)syntax\s+error",
+            r"(?i)import\s+error",
+            r"(?i)module\s+not\s+found",
+            r"(?i)database\s+error",
+            r"(?i)authentication\s+failed",
+            r"(?i)access\s+denied",
         ]
 
         # Warning patterns
         self.warning_patterns = [
-            r'(?i)warn|warning|deprecated',
-            r'(?i)timeout|slow|performance',
-            r'(?i)retry|retrying',
-            r'(?i)fallback|default',
-            r'(?i)missing\s+configuration'
+            r"(?i)warn|warning|deprecated",
+            r"(?i)timeout|slow|performance",
+            r"(?i)retry|retrying",
+            r"(?i)fallback|default",
+            r"(?i)missing\s+configuration",
         ]
 
     async def process_log_entry(self, entry: LogEntry) -> LogEntry:
@@ -130,13 +137,16 @@ class LogProcessor:
         message_lower = message.lower()
 
         # Check for explicit level indicators
-        if any(word in message_lower for word in ['error', 'exception', 'traceback', 'failed']):
+        if any(
+            word in message_lower
+            for word in ["error", "exception", "traceback", "failed"]
+        ):
             return LogLevel.ERROR
-        elif any(word in message_lower for word in ['warn', 'warning', 'deprecated']):
+        elif any(word in message_lower for word in ["warn", "warning", "deprecated"]):
             return LogLevel.WARNING
-        elif any(word in message_lower for word in ['info', 'information']):
+        elif any(word in message_lower for word in ["info", "information"]):
             return LogLevel.INFO
-        elif any(word in message_lower for word in ['debug', 'trace']):
+        elif any(word in message_lower for word in ["debug", "trace"]):
             return LogLevel.DEBUG
 
         return LogLevel.INFO
@@ -147,29 +157,29 @@ class LogProcessor:
 
         # Extract JSON if present
         try:
-            json_match = re.search(r'\{[^}]+\}', message)
+            json_match = re.search(r"\{[^}]+\}", message)
             if json_match:
-                structured['json'] = json.loads(json_match.group())
+                structured["json"] = json.loads(json_match.group())
         except json.JSONDecodeError:
             pass
 
         # Extract key-value pairs
-        kv_pattern = r'(\w+)=([^\s]+)'
+        kv_pattern = r"(\w+)=([^\s]+)"
         for match in re.finditer(kv_pattern, message):
             key, value = match.groups()
             structured[key] = value
 
         # Extract URLs
-        url_pattern = r'https?://[^\s]+'
+        url_pattern = r"https?://[^\s]+"
         urls = re.findall(url_pattern, message)
         if urls:
-            structured['urls'] = urls
+            structured["urls"] = urls
 
         # Extract IP addresses
-        ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
+        ip_pattern = r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b"
         ips = re.findall(ip_pattern, message)
         if ips:
-            structured['ips'] = ips
+            structured["ips"] = ips
 
         return structured
 
@@ -189,7 +199,7 @@ class LogProcessor:
                 break
 
         # Extract hashtags
-        hashtag_pattern = r'#\w+'
+        hashtag_pattern = r"#\w+"
         hashtags = re.findall(hashtag_pattern, message)
         tags.extend(hashtags)
 
@@ -198,27 +208,28 @@ class LogProcessor:
     def _is_stack_trace(self, message: str) -> bool:
         """Check if message contains a stack trace."""
         stack_indicators = [
-            'Traceback (most recent call last)',
-            'File "', 'line ',
-            'at ',
-            'caused by',
-            'stack trace'
+            "Traceback (most recent call last)",
+            'File "',
+            "line ",
+            "at ",
+            "caused by",
+            "stack trace",
         ]
         return any(indicator in message for indicator in stack_indicators)
 
     def _parse_django_log(self, entry: LogEntry) -> LogEntry:
         """Parse Django-specific log format."""
         # Django request logs
-        django_request_pattern = r'\[(\d{2}\/\w{3}\/\d{4} \d{2}:\d{2}:\d{2})\] "([A-Z]+) ([^"]+)"'
+        django_request_pattern = (
+            r'\[(\d{2}\/\w{3}\/\d{4} \d{2}:\d{2}:\d{2})\] "([A-Z]+) ([^"]+)"'
+        )
         match = re.search(django_request_pattern, entry.message)
 
         if match:
             timestamp_str, method, path = match.groups()
-            entry.structured_data.update({
-                'http_method': method,
-                'path': path,
-                'request_log': True
-            })
+            entry.structured_data.update(
+                {"http_method": method, "path": path, "request_log": True}
+            )
             entry.tags.append("http_request")
 
         return entry
@@ -226,17 +237,21 @@ class LogProcessor:
     def _parse_flask_log(self, entry: LogEntry) -> LogEntry:
         """Parse Flask-specific log format."""
         # Flask request logs
-        flask_pattern = r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) - - \[([^\]]+)\] "([A-Z]+) ([^"]+)"'
+        flask_pattern = (
+            r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) - - \[([^\]]+)\] "([A-Z]+) ([^"]+)"'
+        )
         match = re.search(flask_pattern, entry.message)
 
         if match:
             ip, timestamp_str, method, path = match.groups()
-            entry.structured_data.update({
-                'client_ip': ip,
-                'http_method': method,
-                'path': path,
-                'request_log': True
-            })
+            entry.structured_data.update(
+                {
+                    "client_ip": ip,
+                    "http_method": method,
+                    "path": path,
+                    "request_log": True,
+                }
+            )
             entry.tags.append("http_request")
 
         return entry
@@ -270,10 +285,7 @@ class LogStorage:
         await self._write_to_file(entry)
 
     async def get_logs(
-        self,
-        filter_config: LogFilter,
-        limit: int = 100,
-        offset: int = 0
+        self, filter_config: LogFilter, limit: int = 100, offset: int = 0
     ) -> List[LogEntry]:
         """Retrieve logs with filtering."""
         # For now, use in-memory logs
@@ -308,60 +320,106 @@ class LogStorage:
             logs = [log for log in logs if pattern.search(log.message)]
 
         if filter_config.tags:
-            logs = [log for log in logs if any(tag in log.tags for tag in filter_config.tags)]
+            logs = [
+                log
+                for log in logs
+                if any(tag in log.tags for tag in filter_config.tags)
+            ]
 
         # Sort by timestamp (newest first)
         logs.sort(key=lambda x: x.timestamp, reverse=True)
 
         # Apply pagination
-        return logs[offset:offset + limit]
+        return logs[offset : offset + limit]
 
     async def _write_to_file(self, entry: LogEntry):
         """Write log entry to file."""
         try:
             # Create date-based file structure
-            date_str = entry.timestamp.strftime('%Y-%m-%d')
+            date_str = entry.timestamp.strftime("%Y-%m-%d")
             log_file = self.storage_path / f"{date_str}.log"
 
             # Format log entry
             log_line = self._format_log_entry(entry)
 
             # Write to file
-            async with aiofiles.open(log_file, 'a', encoding='utf-8') as f:
-                await f.write(log_line + '\n')
+            async with aiofiles.open(log_file, "a", encoding="utf-8") as f:
+                await f.write(log_line + "\n")
 
         except Exception as e:
             self.logger.error(f"Failed to write log to file: {str(e)}")
 
     def _format_log_entry(self, entry: LogEntry) -> str:
         """Format log entry for file storage."""
-        return json.dumps({
-            'id': entry.id,
-            'timestamp': entry.timestamp.isoformat(),
-            'level': entry.level.value,
-            'source': entry.source.value,
-            'message': entry.message,
-            'project_id': entry.project_id,
-            'process_id': entry.process_id,
-            'tags': entry.tags,
-            'structured_data': entry.structured_data,
-            'stack_trace': entry.stack_trace
-        })
+        return json.dumps(
+            {
+                "id": entry.id,
+                "timestamp": entry.timestamp.isoformat(),
+                "level": entry.level.value,
+                "source": entry.source.value,
+                "message": entry.message,
+                "project_id": entry.project_id,
+                "process_id": entry.process_id,
+                "tags": entry.tags,
+                "structured_data": entry.structured_data,
+                "stack_trace": entry.stack_trace,
+            }
+        )
 
 
 class LogService:
     """Core log management service."""
 
-    def __init__(self, storage_path: Optional[Path] = None):
+    def __init__(self, config: Optional[Config] = None):
         self.logger = logging.getLogger(__name__)
-        self.storage_path = storage_path or Path.cwd() / "logs"
-        self.storage = LogStorage(self.storage_path)
-        self.processor = LogProcessor()
-        self.event_emitter = EventEmitter()
-        self.async_utils = AsyncUtils()
+        try:
+            self.config = config or Config()
+            self._validate_config()
+            self.storage_path = self._resolve_logs_path()
+            self._ensure_logs_dir()
+            self.storage = LogStorage(self.storage_path)
+            self.processor = LogProcessor()
+            self.event_emitter = EventEmitter()
+            self.async_utils = AsyncUtils()
 
-        # Pattern monitoring
-        self.patterns: Dict[str, LogPattern] = {}
+            # Pattern monitoring
+            self.patterns: Dict[str, LogPattern] = {}
+        except Exception as e:
+            self.logger.error(f"Failed to initialize LogService: {str(e)}")
+            raise LogError(f"Failed to initialize LogService: {str(e)}")
+
+    def _validate_config(self):
+        """Validate config."""
+        if not hasattr(self.config, "logging"):
+            raise LogError("Missing logging configuration")
+
+        if not isinstance(self.config.logging.dir, str):
+            raise TypeError("Logging directory path must be a string")
+
+
+    def _resolve_logs_path(self) -> Path:
+        """Resolve the absolute path to logs directory."""
+        log_dir  =getattr(self.config.logging, "dir", ".fuse/logs")
+
+        if Path(log_dir).is_absolute():
+            return Path(log_dir)
+
+        project_root  =  getattr(self.config, "project_root", Path.cwd())
+        return project_root / log_dir
+
+    def _ensure_logs_dir(self) -> None:
+        """Ensure logs directory exists."""
+        try:
+            self.storage_path.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            self.logger.error(f"Failed to create logs directory: {str(e)}")
+            raise 
+
+    def _get_logs_dir(self) -> Path:
+        """Get logs directory from config or use default."""
+        if hasattr(self.config, "logging") and hasattr(self.config.logging, "dir"):
+            return Path(self.config.project_path) / self.config.logging.dir
+        return Path(self.config.project_path) / ".fuse" / "logs"
 
         # Statistics
         self.stats = LogStats(
@@ -372,7 +430,7 @@ class LogService:
             debug_count=0,
             entries_per_hour={},
             top_sources={},
-            avg_message_length=0.0
+            avg_message_length=0.0,
         )
 
         # Real-time subscribers
@@ -410,7 +468,7 @@ class LogService:
         project_id: Optional[str] = None,
         process_id: Optional[str] = None,
         stack_trace: Optional[str] = None,
-        extra_data: Optional[Dict[str, Any]] = None
+        extra_data: Optional[Dict[str, Any]] = None,
     ) -> LogEntry:
         """Add a new log entry."""
         try:
@@ -425,7 +483,7 @@ class LogService:
                 process_id=process_id,
                 stack_trace=stack_trace,
                 tags=[],
-                structured_data=extra_data or {}
+                structured_data=extra_data or {},
             )
 
             # Process the entry
@@ -445,8 +503,7 @@ class LogService:
 
             # Emit event
             await self.event_emitter.emit(
-                LogEventType.LOG_ENTRY_CREATED.value,
-                {"entry": asdict(entry)}
+                LogEventType.LOG_ENTRY_CREATED.value, {"entry": asdict(entry)}
             )
 
             return entry
@@ -459,7 +516,7 @@ class LogService:
         self,
         filter_config: Optional[LogFilter] = None,
         limit: int = 100,
-        offset: int = 0
+        offset: int = 0,
     ) -> List[LogEntry]:
         """Get logs with filtering."""
         if not filter_config:
@@ -468,9 +525,7 @@ class LogService:
         return await self.storage.get_logs(filter_config, limit, offset)
 
     async def get_log_stats(
-        self,
-        project_id: Optional[str] = None,
-        time_range: Optional[timedelta] = None
+        self, project_id: Optional[str] = None, time_range: Optional[timedelta] = None
     ) -> LogStats:
         """Get log statistics."""
         # For now, return global stats
@@ -478,10 +533,7 @@ class LogService:
         return self.stats
 
     async def search_logs(
-        self,
-        query: str,
-        limit: int = 100,
-        use_regex: bool = False
+        self, query: str, limit: int = 100, use_regex: bool = False
     ) -> List[LogEntry]:
         """Search logs by query."""
         filter_config = LogFilter()
@@ -497,7 +549,7 @@ class LogService:
         self,
         filter_config: LogFilter,
         format: str = "json",
-        output_path: Optional[Path] = None
+        output_path: Optional[Path] = None,
     ) -> Path:
         """Export logs to file."""
         try:
@@ -506,7 +558,7 @@ class LogService:
 
             # Generate output path
             if not output_path:
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 output_path = self.storage_path / f"export_{timestamp}.{format}"
 
             # Export based on format
@@ -522,7 +574,7 @@ class LogService:
             # Emit event
             await self.event_emitter.emit(
                 LogEventType.LOG_EXPORT.value,
-                {"path": str(output_path), "format": format, "count": len(logs)}
+                {"path": str(output_path), "format": format, "count": len(logs)},
             )
 
             self.logger.info(f"Exported {len(logs)} logs to {output_path}")
@@ -560,12 +612,12 @@ class LogService:
         self,
         subscriber_id: str,
         callback: Callable[[LogEntry], None],
-        filter_config: Optional[LogFilter] = None
+        filter_config: Optional[LogFilter] = None,
     ) -> bool:
         """Subscribe to real-time log updates."""
         self.subscribers[subscriber_id] = {
-            'callback': callback,
-            'filter': filter_config
+            "callback": callback,
+            "filter": filter_config,
         }
 
         self.logger.info(f"Added log subscriber: {subscriber_id}")
@@ -581,8 +633,7 @@ class LogService:
         return False
 
     async def stream_logs(
-        self,
-        filter_config: Optional[LogFilter] = None
+        self, filter_config: Optional[LogFilter] = None
     ) -> AsyncGenerator[LogEntry, None]:
         """Stream logs in real-time."""
         pass

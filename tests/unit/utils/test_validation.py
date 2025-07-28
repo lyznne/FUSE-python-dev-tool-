@@ -1,18 +1,19 @@
-import pytest
 from pathlib import Path
 
+import pytest
+
+from python_dev_tool.core.exceptions import DevToolError
 from python_dev_tool.utils.validation import (
-    validate_project_path,
-    validate_name,
-    validate_port,
-    validate_framework,
-    validate_url,
-    validate_positive_int,
     validate_choice,
     validate_config_key,
     validate_environment,
+    validate_framework,
+    validate_name,
+    validate_port,
+    validate_positive_int,
+    validate_project_path,
+    validate_url,
 )
-from python_dev_tool.core.exceptions import DevToolError
 
 
 class TestValidateProjectPath:
@@ -65,7 +66,7 @@ class TestValidateProjectPath:
         result = validate_project_path(empty_dir2, check_empty=True)
         assert result == empty_dir2.resolve()
 
-        
+
     def test_relative_path_conversion(self):
         relative_path = Path("relative/path")
         result = validate_project_path(relative_path, must_exist=False)

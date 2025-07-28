@@ -35,7 +35,7 @@ app = typer.Typer(
     name="fuse",
     help="🚀 Python Development Tool - Supercharge your Python development workflow",
     add_completion=False,
-    no_args_is_help=True,
+    no_args_is_help=False,
     rich_markup_mode="rich",  # or markdown
     context_settings={"help_option_names": ["-h", "--help"]},
 )
@@ -69,8 +69,44 @@ def verbose_callback(value: bool) -> None:
         logging.basicConfig(level=logging.DEBUG)
 
 
-@app.callback()
+# default message when no subcommand is provided
+def show_welcome():
+    """Show welcome screen message and help information."""
+    console.print(
+        Panel.fit(
+            "[bold blue]👋 Welcome to the Python Dev Tool![/bold blue]",
+            style="blue",
+        )
+    )
+    console.print(
+        "[bold yellow]🚀 Supercharge your Python development workflow[/bold yellow]"
+    )
+    console.print(
+        "A comprehensive development tool that provides:\n"
+        " • Live development server with hot reload\n"
+        " • Beautiful web-based debugging UI\n"
+        " • Multi-framework support (Django, Flask, FastAPI, etc.)\n"
+        " • One-click deployment to multiple platforms\n"
+        " • Real-time logs and performance monitoring\n"
+    )
+    console.print(
+        "[bold yellow]📚 Documentation: https://python-dev-tool.readthedocs.io[/bold yellow]"
+    )
+    console.print(
+        "[bold yellow]💬 Community: https://github.com/lyznne/python-dev-tool/discussions[/bold yellow]"
+    )
+    console.print("\n[bold yellow]💡 Next steps:[/bold yellow]")
+    console.print(
+        " • Run [bold]fuse init[/bold] to create a new project\n"
+        " • Run [bold]fuse dev[/bold] to start the development server\n"
+        " • Run [bold]fuse build[/bold] to build your project\n"
+        " • Run [bold]fuse deploy[/bold] to deploy your project\n"
+        " • Run [bold]fuse status[/bold] to check the status of your project\n"
+    )
+
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     version: bool = typer.Option(
         None,
         "--version",
@@ -112,6 +148,10 @@ def main(
     if config_file:
         Config.set_config_file(config_file)
 
+    if ctx.invoked_subcommand is None:
+        # Show welcome message if no subcommand is provided
+        show_welcome()
+
 
 # Command: init
 @app.command()
@@ -123,77 +163,168 @@ def init(
         None,
         "--framework",
         "-f",
-        help="Framework to use (django, flask, fastapi, streamlit)",
+        help="Framework to use (django, flask, fastapi, streamlit, tornado, sanic, python)",
+        rich_help_panel="Project Configuration",
     ),
-    name: Optional[str] = typer.Option(None, "--name", "-n", help="Project name"),
+    name: Optional[str] = typer.Option(
+        None,
+        "--name",
+        "-n",
+        help="Project name (defaults to directory name)",
+        rich_help_panel="Project Configuration",
+    ),
     template: Optional[str] = typer.Option(
-        None, "--template", "-t", help="Project template to use"
+        None,
+        "--template",
+        "-t",
+        help="Project template to use (future feature)",
+        rich_help_panel="Project Configuration",
     ),
     force: bool = typer.Option(
-        False, "--force", help="Force initialization even if directory is not empty"
+        False,
+        "--force",
+        help="Force initialization even if directory is not empty",
+        rich_help_panel="Advanced Options",
     ),
     verbose: bool = typer.Option(
-        False, "--verbose", "-v", help="Enable verbose output for debugging")
-
+        False,
+        "--verbose",
+        "-v",
+        help="Enable verbose output for debugging",
+        rich_help_panel="Advanced Options",
+    ),
+    install_deps: bool =  typer.Option(
+        True,
+        "--install-deps/--no-install-deps",
+        help="Install Initial dependencies of the project.",
+        rich_help_panel="Advanced options",
+    ),
+    python_executable: Optional[str] =  typer.Option(
+        None,
+        "--python-bin",
+        help="Python executable to use. Uses the defoult of Your System."
+    )
 ) -> None:
     """
-    🎯 Initialize a new Python project with development tools
+    🎯 Initialize a new Python project with FUSE development tools.
 
-    Creates a new project structure with:
-    • Framework-specific configuration
-    • Development server setup
-    • Docker configuration
-    • CI/CD pipeline templates
-    • Testing framework setup
+    Creates a comprehensive development environment with:
+
+    • 🔧 Framework-specific configuration and setup
+    • 🐍 Virtual environment management
+    • 📦 Dependency management (requirements.txt)
+    • 🔥 Hot-reload development server
+    • 🌐 Web-based development dashboard
+    • 🐳 Docker configuration templates
+    • 📊 Built-in monitoring and logging
+    • 🚀 One-click deployment configurations
+
+    Examples:
+
+        # Initialize in current directory (interactive)
+        fuse init
+
+        # Initialize Django project
+        fuse init --framework django --name mysite
+
+        # Initialize FastAPI project in specific directory
+        fuse init /path/to/project --framework fastapi
+
+        # Force initialization in non-empty directory
+        fuse init --force --framework flask
+
+        # Disable installation of dependencies
+        fuse init --no-install-deps
+
+        # Pass Custom python executable
+        fuse init --python-bin /bin/script/python3.15
     """
     try:
-        # validate project path
+        # Validate project path
         validate_project_path(project_path)
 
-        # init banner
+        # Display initialization banner
         console.print(
             Panel.fit(
-                "[bold blue]🎯 Initializing Python Development Project[/bold blue]",
+                "[bold blue]🎯 FUSE - Python Development Tool[/bold blue]\n"
+                "[dim]Initializing your development environment...[/dim]",
                 style="blue",
+                padding=(1, 2),
             )
         )
 
-        # run initilization
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
-            task = progress.add_task("[bold blue]Initializing...", total=None)
+        # Run initialization
+        # import init command
+        from python_dev_tool.cli.commands.init import init_project
+        result = init_project(
+            project_path=project_path,
+            framework=framework,
+            name=name,
+            template=template,
+            force=force,
+            verbose=verbose,
+            install_deps=install_deps,
+            python_executable=python_executable
+        )
 
-            # import init command
-            from python_dev_tool.cli.commands.init import InitCommand
+        # Display success message
+        console.print(
+            f"\n[bold green]🎉 Project initialized successfully![/bold green]"
+        )
+        console.print(f"📁 Location: [bold cyan]{result['project_path']}[/bold cyan]")
+        console.print(
+            f"🔧 Framework: [bold magenta]{result['framework'].title()}[/bold magenta]"
+        )
+        console.print(f"📝 Name: [bold yellow]{result['name']}[/bold yellow]")
 
-            init_cmd = InitCommand(project_path, framework, name, template, force)
-            result = init_cmd.run()
-
-            progress.update(task, description=" initialization complete")
-
-        # print success message
-        console.print(f"\n[bold green]Project initialized successfully![/bold green]")  # noqa: F541
-        console.print(f"📁 Project location: [bold]{project_path.absolute()}[/bold]")
-
+        # Display next steps
         if result.get("next_steps"):
-            console.print(f"\n[bold yellow]Next steps:[/bold yellow]")  # noqa: F541
-            for step in result.get("next_steps"):
-                console.print(f" • [bold]{step}[/bold]")
+            console.print(
+                Panel(
+                    "\n".join(
+                        [
+                            f"[bold cyan]{i + 1}.[/bold cyan] {step}"
+                            for i, step in enumerate(result["next_steps"])
+                        ]
+                    ),
+                    title="[bold green]🚀 Next Steps[/bold green]",
+                    border_style="green",
+                    padding=(1, 2),
+                )
+            )
+
+        # Additional helpful information
+        console.print(
+            f"\n[dim]💡 Pro tip: Run [bold]fuse --help[/bold] to see all available commands[/dim]"
+        )
 
     except DevToolError as e:
-        error_console.print(f"[bold red]Error: {e}[/bold red]")
+        error_console.print(
+            Panel(
+                f"[bold red]❌ Initialization Error[/bold red]\n\n{str(e)}",
+                border_style="red",
+                padding=(1, 2),
+            )
+        )
+        if verbose:
+            error_console.print_exception()
         raise typer.Exit(1)
+
+    except KeyboardInterrupt:
+        console.print(f"\n[yellow]⚠️  Initialization cancelled by user[/yellow]")
+        raise typer.Exit(130)
 
     except Exception as e:
-        console.print(f"[bold red]Unexpected error occurred: {e}[/bold red]")
+        error_console.print(
+            Panel(
+                f"[bold red]💥 Unexpected Error[/bold red]\n\n{str(e)}",
+                border_style="red",
+                padding=(1, 2),
+            )
+        )
         if verbose:
-            console.print_exception()
-
+            error_console.print_exception()
         raise typer.Exit(1)
-
 
 # command: dev
 @app.command()
@@ -838,6 +969,8 @@ def update(
         if verbose:
             console.print_exception()
         raise typer.Exit(1)
+
+
 #
-if __name__ == "__main__":
-    app()
+# if __name__ == "__main__":
+#     app()

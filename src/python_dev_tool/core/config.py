@@ -5,15 +5,13 @@ config.py - Config File
 
 # sys imports
 import os
-import toml
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Union
-from pydantic import BaseModel, Field, field_validator
-from pydantic_settings import BaseSettings
-from pydantic import ConfigDict
+from typing import Any, Dict, List, Literal, Optional, Union
 
-# local imports
-from .exceptions import ConfigError
+import toml
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic_settings import BaseSettings
+
 from python_dev_tool.core.globals import (
     APP_HOST,
     APP_LOG_LEVEL,
@@ -21,7 +19,6 @@ from python_dev_tool.core.globals import (
     APP_TIMEOUT,
     APP_UI_PORT,
     APP_WORKERS,
-    FRAMEWORK,
     FUSE_CONFIG_FILE,
     LOG_BACKUP_COUNT,
     LOG_FILE_ENABLED,
@@ -30,10 +27,11 @@ from python_dev_tool.core.globals import (
     LOG_LEVEL,
     LOG_MAX_FILE_SIZE,
     PROJECT_NAME,
-    PROJECT_ROOT,
-    PYTHON_VERSION,
     SUPPORTED_FRAMEWORKS,
 )
+
+# local imports
+from .exceptions import ConfigError
 
 
 class ServerConfig(BaseModel):
@@ -57,9 +55,7 @@ class DashboardConfig(BaseModel):
     auto_open: bool = True
     theme: str = "dark"
 
-
-
-    @field_validator('port', mode='before')
+    @field_validator("port", mode="before")
     @classmethod
     def validate_port(cls, v):
         """Ensure port is a valid integer between 1024 and 65535."""
@@ -103,16 +99,15 @@ class SecurityConfig(BaseModel):
 
     @field_validator("allowed_origins", mode="before")
     @classmethod
-    def validate_allowed_origins(cls, v:Any)-> List[str]:
+    def validate_allowed_origins(cls, v: Any) -> List[str]:
         """Convert string origin to list if needed."""
         if v is None:
             return ["*"]
         if isinstance(v, str):
             return [v.strip()]
-        if isinstance(v, (list,tuple)):
+        if isinstance(v, (list, tuple)):
             return [item.strip() for item in v if isinstance(item, str)]
         raise ValueError("allowed_origins must be a string or a list of strings")
-
 
 
 class DeploymentConfig(BaseModel):
@@ -140,13 +135,21 @@ class DevToolConfig(BaseSettings):
     """Main configuration class of FUSE."""
 
     # project settings
-    project_name: str = Field(default=PROJECT_NAME, description="Project name")
+    project_name: str = Field(
+        default=PROJECT_NAME, description="Project name", min_length=1, max_length=100
+    )
     project_root: Optional[Path] = Field(default=None, description="Project root path")
-    framework: str = Field(default="", description="Framework name")
-    python_version: str = Field(default="3.8+", description="Python version")
-    version: str = Field(default="1.0.0", description="Project version")
-
-
+    framework: Literal["django", "flask", "fastapi", "streamlit", "tornado", "sanic"] = Field(
+        default="flask",
+        description="Framework name",
+        pattern="|".join(SUPPORTED_FRAMEWORKS),
+    )
+    python_version: str = Field(default="3.8+", description="Python version",
+                            pattern=r"^[0-9]+\.[0-9]+\+?$"
+                                )
+    version: str = Field(
+        default="1.0.0", description="Project version", pattern=r"^\d+\.\d+\.\d+$"
+    )
 
     # Components settings
     server: ServerConfig = Field(default_factory=ServerConfig)
@@ -157,24 +160,54 @@ class DevToolConfig(BaseSettings):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
 
     # Commands
-    commands: Dict[str, str] = Field(default_factory=dict)
+    commands: Dict[str, str] = Field(
+        default_factory=dict, description="Custom commands for the project"
+    )
 
     # Environment variables
-    environment: Dict[str, str] = Field(default_factory=dict)
+    environment: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Environment variables"
+    )
 
     # Plugin settings
-    plugins: List[str] = Field(default_factory=dict)
+    plugins: List[str] = Field(
+        default_factory=list, description="List of enabled plugins"
+    )
 
     # Development settings
-    debug: bool = False
-    testing: bool = False
+    debug: bool = Field(default=False, description="Enable debug mode")
+    testing: bool = Field(default=False, description="Enable testing mode")
 
     model_config = ConfigDict(
         env_prefix="FUSE_",
         env_nested_delimiter="__",
         case_sensitive=False,
-        extra="allow",
+        extra="ignore",  # Changed from "allow" to "ignore" for stricter validation
+        validate_default=True,
     )
+
+    @field_validator("project_name", mode="before")
+    @classmethod
+    def validate_project_name(cls, v: Any) -> str:
+        """Ensure project_name is always a string."""
+        if isinstance(v, (tuple, list)):
+            return str(v[0]) if v else PROJECT_NAME
+        return str(v)
+
+    @field_validator("plugins", mode="before")
+    @classmethod
+    def validate_plugins(cls, v: Any) -> List[str]:
+        """Convert plugins to list if needed."""
+        if v is None:
+            return []
+        if isinstance(v, str):
+            return [v.strip()]
+        if isinstance(v, dict):
+            return list(v.values())
+        if isinstance(v, (tuple, set)):
+            return list(v)
+        return v
 
     @field_validator("framework")
     @classmethod
@@ -190,13 +223,13 @@ class DevToolConfig(BaseSettings):
 
     @field_validator("server", mode="before")
     @classmethod
-    def validate_server(cls, v: Any): ## To be fixed
+    def validate_server(cls, v: Any):  ## To be fixed
         """Validate server settings."""
+        if isinstance(v, ServerConfig):
+            return v
         if not isinstance(v, dict):
             raise ValueError("Expected server config to be a dict")
-        # if "port" not in v or not isinstance(v["port"], int):
-        #     raise ValueError("Server port must be an integer")
-        port  = v.get("port")
+        port = v.get("port")
         if port is not None and (port < 1024 or port > 65535):
             raise ValueError("Invalid server port (must be between 1024 and 65535)")
         return v
@@ -211,7 +244,7 @@ class DevToolConfig(BaseSettings):
     #     return v
 
 
-class Config: # class name ConfigManager
+class Config:  # class name ConfigManager
     """Configuration manager."""
 
     def __init__(self, config_path: Optional[Path] = None):
@@ -225,8 +258,8 @@ class Config: # class name ConfigManager
 
         # look for config files in order of preference
         config_files = [
-            ".devtool/config.toml",
-            "devtool.toml",
+            ".fuse/config.toml",
+            "fuse.toml",
             "pyproject.toml",
         ]
 
@@ -245,7 +278,7 @@ class Config: # class name ConfigManager
 
     def _unwrap_singleton(self, value):
         """Unwrap singleton values."""
-        if isinstance(value, (tuple, list))  and len(value) == 1:
+        if isinstance(value, (tuple, list)) and len(value) == 1:
             return self._unwrap_singleton(value[0])
         return value
 
@@ -259,34 +292,51 @@ class Config: # class name ConfigManager
                 sanitized[key] = self._unwrap_singleton(value)
         return sanitized
 
+    def _preprocess_config(self, config_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Pre-process config data before validation."""
+        processed = {}
+
+        for key, value in config_data.items():
+            if isinstance(value, dict):
+                processed[key] = self._preprocess_config(value)
+            elif isinstance(value, (tuple, list)) and len(value) == 1:
+                processed[key] = value[0]
+            else:
+                processed[key] = value
+
+            # Special handling for plugins
+            if key == "plugins" and isinstance(value, dict):
+                processed[key] = list(value.values())
+
+        return processed
+
     def _load_config(self) -> None:
-        """Load configuration from file."""
+        """Load and validate configuration."""
         config_data = {}
 
         if self.config_path and self.config_path.exists():
             try:
                 with open(self.config_path, "r") as f:
+                    raw_data = toml.load(f)
+
+                    # Handle pyproject.toml special case
                     if self.config_path.name == "pyproject.toml":
-                        # Extract tool.python_dev_tool section
-                        full_config = toml.load(f)
-                        config_data = full_config.get("tool", {}).get(
+                        config_data = raw_data.get("tool", {}).get(
                             "python_dev_tool", {}
                         )
                     else:
-                        config_data = toml.load(f)
+                        config_data = raw_data
+
+                    # Pre-process the data
+                    config_data = self._preprocess_config(config_data)
+
             except Exception as e:
-                raise ConfigError(
-                    f"Failed to load configuration from {self.config_path}: {e}"
-                )
+                raise ConfigError(f"Failed to load config: {str(e)}")
 
-        # sanitize config
-        config_data = self._sanitize_config(config_data)
-
-        # Load environment variables and create config
         try:
             self._config = DevToolConfig(**config_data)
         except Exception as e:
-            raise ConfigError(f"Invalid configuration: {e}")
+            raise ConfigError(f"Invalid configuration: {str(e)}")
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get configuration value."""
@@ -362,12 +412,12 @@ class Config: # class name ConfigManager
     @classmethod
     def load_from_path(cls, path: Path) -> "Config":
         """Load the configuration from a file path."""
-        return  cls.load_from_project(path)
+        return cls.load_from_project(path)
 
     @classmethod
     def load_from_project(cls, project_path: Path) -> "Config":
         """Load the configuration from a project path."""
-        config_file  =  project_path / ".devtool" / "config.toml"
+        config_file = project_path / ".devtool" / "config.toml"
 
         if not config_file.exists():
             raise ConfigError(f"Config file not found at: {config_file}")
@@ -376,7 +426,7 @@ class Config: # class name ConfigManager
     @classmethod
     def load_project_config(cls, project_path: Path) -> Dict[str, Any]:
         """Load the configuration from a project path."""
-        config_file  =  project_path / ".devtool" / "config.toml"
+        config_file = project_path / ".devtool" / "config.toml"
 
         if not config_file.exists():
             raise ConfigError(f"Config file not found at: {config_file}")
@@ -385,7 +435,7 @@ class Config: # class name ConfigManager
     def set_config_file(cls, config_path: Union[str, Path]) -> None:
         if isinstance(config_path, str):
             config_path = Path(config_path)
-1
+
         if not isinstance(config_path, Path):
             raise TypeError(f"Expected a Path, got {type(config_path).__name__}")
 

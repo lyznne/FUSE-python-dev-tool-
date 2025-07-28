@@ -1,0 +1,48 @@
+# $project_name
+
+A $framework application built with FUSE Python Dev Tool.
+
+## Setup
+
+1. Activate virtual environment:
+   ```bash
+   $activation_command
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Start development server:
+   ```bash
+   fuse dev
+   ```
+
+## Development
+
+- **Framework**: $framework_title
+- **Python Version**: $python_version+
+- **Port**: $port
+
+## Commands
+
+- `fuse dev` - Start development server
+- `fuse build` - Build for production
+- `fuse deploy` - Deploy application
+
+## Project Structure
+
+```
+$project_dir_name/
+├── $main_file          # Main application file
+├── requirements.txt    # Python dependencies
+├── .env.example       # Environment variables template
+├── .gitignore         # Git ignore rules
+├── .fuse/             # FUSE configuration
+└── README.md          # This file
+```
+
+## Author
+
+Created by $author in $year.

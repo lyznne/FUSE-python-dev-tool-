@@ -1,0 +1,80 @@
+"""
+$project_name - FastAPI Application
+Created by $author in $year
+"""
+
+import os
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from pydantic import BaseModel
+
+# Load environment variables
+load_dotenv()
+
+# Create FastAPI app
+app = FastAPI(
+    title="$project_name",
+    description="A $framework application built with FUSE",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Pydantic models
+class HealthResponse(BaseModel):
+    status: str
+    service: str
+    framework: str
+
+class InfoResponse(BaseModel):
+    project: str
+    framework: str
+    python_version: str
+    author: str
+
+@app.get("/")
+async def root():
+    """Root endpoint."""
+    return {
+        "message": f"Hello from $project_name!",
+        "framework": "$framework",
+        "status": "running"
+    }
+
+@app.get("/health", response_model=HealthResponse)
+async def health():
+    """Health check endpoint."""
+    return HealthResponse(
+        status="healthy",
+        service="$project_name",
+        framework="$framework"
+    )
+
+@app.get("/api/info", response_model=InfoResponse)
+async def info():
+    """API info endpoint."""
+    return InfoResponse(
+        project="$project_name",
+        framework="$framework_title",
+        python_version="$python_version",
+        author="$author"
+    )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="$host",
+        port=int(os.getenv("PORT", $port)),
+        reload=True
+    )
