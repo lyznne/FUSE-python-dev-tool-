@@ -1,12 +1,13 @@
 site_name: FUSE - Python Dev Tool
 site_description: Live Python Dev Server + UI + Logs + Framework-aware CLI
-site_url: https://github.com/lyznne/FUSE-python-dev-tool-
+site_url: https://github.com/fuse-dev-tool
 site_author: lyznne
 
-repo_url: https://github.com/lyznne/FUSE-python-dev-tool-
-repo_name: FUSE-python-dev-tool-
-edit_uri: edit/main/docs/
+repo_url: https://github.com/fuse-dev-tool
+repo_name: fuse-docs
+edit_uri: edit/main/
 
+site_dir: docs_site
 
 theme:
   name: material
@@ -43,7 +44,7 @@ theme:
         primary: green  # or "deep green"
         accent: teal    # or "lime" for contrast
         toggle:
-          icon: material/weather-sunnyce 
+          icon: material/weather-sunny
           name: Switch to light mode
   font:
     text: Inter
@@ -88,9 +89,9 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/your-org/python-dev-tool
+      link: https://github.com/fuse-dev-tool/fuse-core
     - icon: fontawesome/brands/twitter
-      link: https://twitter.com/yourproject
+      link: https://twitter.com/fuse-dev-tool
   generator: false
 
 nav:

@@ -56,7 +56,7 @@ EMOJI_FAST        := ⚡
 # EMOJI_ERROR       := [✗]
 
 # Default variables
-PORT ?= 8000
+PORT ?= 8001
 TEST_FILE ?= tests/
 SCRIPT_FILE ?= scripts/
 SRC_DIR := src
@@ -64,7 +64,7 @@ VENV_DIR := .fuse_env
 
 # Repository Configuration
 GITHUB_ORG := fuse-dev-tool
-REPOS := core cli ui docs plugins templates releases
+REPOS := core cli ui docs plugins templates releases community
 
 # Git remote URLs
 REMOTE_CORE := git@github.com:$(GITHUB_ORG)/fuse-core.git
