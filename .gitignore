@@ -108,3 +108,9 @@ test-output/
 
 # === EditorConfig Backup ===
 .editorconfig.sav
+
+
+
+# === fuse
+.fuse/
+

@@ -66,6 +66,7 @@ def verbose_callback(value: bool) -> None:
     """Enable verbose mode."""
     if value:
         import logging
+
         logging.basicConfig(level=logging.DEBUG)
 
 
@@ -103,6 +104,7 @@ def show_welcome():
         " • Run [bold]fuse deploy[/bold] to deploy your project\n"
         " • Run [bold]fuse status[/bold] to check the status of your project\n"
     )
+
 
 @app.callback(invoke_without_command=True)
 def main(
@@ -193,17 +195,17 @@ def init(
         help="Enable verbose output for debugging",
         rich_help_panel="Advanced Options",
     ),
-    install_deps: bool =  typer.Option(
+    install_deps: bool = typer.Option(
         True,
         "--install-deps/--no-install-deps",
         help="Install Initial dependencies of the project.",
         rich_help_panel="Advanced options",
     ),
-    python_executable: Optional[str] =  typer.Option(
+    python_executable: Optional[str] = typer.Option(
         None,
         "--python-bin",
-        help="Python executable to use. Uses the defoult of Your System."
-    )
+        help="Python executable to use. Uses the defoult of Your System.",
+    ),
 ) -> None:
     """
     🎯 Initialize a new Python project with FUSE development tools.
@@ -256,6 +258,7 @@ def init(
         # Run initialization
         # import init command
         from python_dev_tool.cli.commands.init import init_project
+
         result = init_project(
             project_path=project_path,
             framework=framework,
@@ -264,7 +267,7 @@ def init(
             force=force,
             verbose=verbose,
             install_deps=install_deps,
-            python_executable=python_executable
+            python_executable=python_executable,
         )
 
         # Display success message
@@ -326,6 +329,7 @@ def init(
             error_console.print_exception()
         raise typer.Exit(1)
 
+
 # command: dev
 @app.command()
 def dev(
@@ -348,7 +352,6 @@ def dev(
     open_browser: bool = typer.Option(
         True, "--open-browser/--no-open-browser", help="Open the browser after starting"
     ),
-
     verbose: bool = typer.Option(
         False, "--verbose", "-v", help="Enable verbose output for debugging"
     ),
@@ -631,7 +634,8 @@ def config_command(
 
     try:
         from python_dev_tool.cli.commands.config import ConfigCommand
-        config_cmd  =  ConfigCommand(
+
+        config_cmd = ConfigCommand(
             action=action,
             key=key,
             value=value,
@@ -639,7 +643,7 @@ def config_command(
             project_path=project_path,
         )
 
-        result  =  config_cmd.run()
+        result = config_cmd.run()
 
         if action == "show":
             console.print(
@@ -658,14 +662,17 @@ def config_command(
             console.print(config_table)
 
         elif action == "get":
-            console.print(f"[bold blue]{key}:[/bold blue] [green]{result.get('value', 'Not set')}[/green]")
+            console.print(
+                f"[bold blue]{key}:[/bold blue] [green]{result.get('value', 'Not set')}[/green]"
+            )
 
         elif action == "set":
-            console.print(f"[bold green]Configuration updated:[/bold green] {key} = {value}")
+            console.print(
+                f"[bold green]Configuration updated:[/bold green] {key} = {value}"
+            )
 
         elif action == "reset":
             console.print("[bold yellow]Configuration reset to defaults[/bold yellow]")
-
 
     except DevToolError as e:
         console.print(f"[bold red]Configuration failed:: {e}[/bold red]")
@@ -709,7 +716,6 @@ def status(
 
         from python_dev_tool.core.app import DevToolApp
         from python_dev_tool.cli.commands.status import StatusCommand
-
 
         status_cmd = StatusCommand(
             project_path=project_path, detailed=detailed, check_deps=True
@@ -762,9 +768,7 @@ def status(
         raise typer.Exit(1)
 
 
-
 # Command: help
-
 
 
 # Command: update

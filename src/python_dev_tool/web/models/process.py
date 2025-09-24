@@ -3,21 +3,22 @@ FUSE - (python dev tool) - Web App
 Process Models
 """
 
-
 from enum import Enum
 from pydantic import BaseModel
 
 
-
 class ProcessStatus(str, Enum):
     """Process statuses"""
+
     CREATED = "created"
     RUNNING = "running"
     STOPPED = "stopped"
     ERROR = "error"
 
+
 class ProcessType(str, Enum):
     """Process types"""
+
     SERVER = "server"
 
 
@@ -34,6 +35,7 @@ class Process(BaseModel):
 
 class ProcessCreate(BaseModel):
     """Model for creating a new process."""
+
     name: str
     command: str
     type: ProcessType = ProcessType.SERVER
@@ -41,6 +43,7 @@ class ProcessCreate(BaseModel):
 
 class ProcessUpdate(BaseModel):
     """Model for updating an existing process."""
+
     name: str
     command: str
     status: ProcessStatus = ProcessStatus.CREATED

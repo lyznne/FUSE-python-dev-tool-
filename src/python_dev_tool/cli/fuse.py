@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 FUSE - Python Development Tool
 ================================================================================
@@ -10,8 +12,8 @@ This will invoke the main application logic defined in `main.py`.
 
 """
 
-
 import sys
+
 from python_dev_tool.cli.main import app
 
 if __name__ == "__main__":

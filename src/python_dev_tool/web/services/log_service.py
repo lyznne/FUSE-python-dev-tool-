@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Any, AsyncGenerator, Callable, Dict, List, Optional
 
 import aiofiles
-from numpy import isin
 
 from python_dev_tool.core.config import Config
 from python_dev_tool.core.events import EventEmitter
@@ -289,6 +288,7 @@ class LogStorage:
     ) -> List[LogEntry]:
         """Retrieve logs with filtering."""
         # For now, use in-memory logs
+        # XXX :TODO - load from state.db and fallback to log file 
         # In production, this would query the file system or database
         logs = list(self.recent_logs)
 
@@ -337,6 +337,7 @@ class LogStorage:
         try:
             # Create date-based file structure
             date_str = entry.timestamp.strftime("%Y-%m-%d")
+            # XXX: TODO update to log file in confi
             log_file = self.storage_path / f"{date_str}.log"
 
             # Format log entry
@@ -377,6 +378,8 @@ class LogService:
             self._validate_config()
             self.storage_path = self._resolve_logs_path()
             self._ensure_logs_dir()
+
+            # Initialize components
             self.storage = LogStorage(self.storage_path)
             self.processor = LogProcessor()
             self.event_emitter = EventEmitter()
@@ -384,6 +387,22 @@ class LogService:
 
             # Pattern monitoring
             self.patterns: Dict[str, LogPattern] = {}
+
+            # Statistics - Initialize here instead of in _get_logs_dir
+            self.stats = LogStats(
+                total_entries=0,
+                error_count=0,
+                warning_count=0,
+                info_count=0,
+                debug_count=0,
+                entries_per_hour={},
+                top_sources={},
+                avg_message_length=0.0,
+            )
+
+            # Real-time subscribers
+            self.subscribers: Dict[str, Callable] = {}
+
         except Exception as e:
             self.logger.error(f"Failed to initialize LogService: {str(e)}")
             raise LogError(f"Failed to initialize LogService: {str(e)}")
@@ -391,20 +410,30 @@ class LogService:
     def _validate_config(self):
         """Validate config."""
         if not hasattr(self.config, "logging"):
-            raise LogError("Missing logging configuration")
+            # Create default logging config if missing
+            from types import SimpleNamespace
 
-        if not isinstance(self.config.logging.dir, str):
-            raise TypeError("Logging directory path must be a string")
-
+            self.config.logging = SimpleNamespace()
+            self.config.logging.dir = ".fuse/logs"
+            self.config.logging.level = "INFO"
+            self.config.logging.format = "default"
 
     def _resolve_logs_path(self) -> Path:
         """Resolve the absolute path to logs directory."""
-        log_dir  =getattr(self.config.logging, "dir", ".fuse/logs")
+        log_dir = getattr(self.config.logging, "dir", ".fuse/logs")
 
         if Path(log_dir).is_absolute():
             return Path(log_dir)
 
-        project_root  =  getattr(self.config, "project_root", Path.cwd())
+        # Get project root - handle different ways it might be stored
+        project_root = None
+        if hasattr(self.config, "project_root") and self.config.project_root:
+            project_root = Path(self.config.project_root)
+        elif hasattr(self.config, "project_path") and self.config.project_path:
+            project_root = Path(self.config.project_path)
+        else:
+            project_root = Path.cwd()
+
         return project_root / log_dir
 
     def _ensure_logs_dir(self) -> None:
@@ -413,28 +442,7 @@ class LogService:
             self.storage_path.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             self.logger.error(f"Failed to create logs directory: {str(e)}")
-            raise 
-
-    def _get_logs_dir(self) -> Path:
-        """Get logs directory from config or use default."""
-        if hasattr(self.config, "logging") and hasattr(self.config.logging, "dir"):
-            return Path(self.config.project_path) / self.config.logging.dir
-        return Path(self.config.project_path) / ".fuse" / "logs"
-
-        # Statistics
-        self.stats = LogStats(
-            total_entries=0,
-            error_count=0,
-            warning_count=0,
-            info_count=0,
-            debug_count=0,
-            entries_per_hour={},
-            top_sources={},
-            avg_message_length=0.0,
-        )
-
-        # Real-time subscribers
-        self.subscribers: Dict[str, Callable] = {}
+            raise
 
     async def initialize(self):
         """Initialize the log service."""
@@ -459,6 +467,146 @@ class LogService:
         await self._rotate_logs()
 
         self.logger.info("LogService cleanup completed")
+
+    async def _load_patterns(self):
+        """Load patterns from storage."""
+        try:
+            patterns_file = self.storage_path / "patterns.json"
+            if patterns_file.exists():
+                async with aiofiles.open(patterns_file, "r") as f:
+                    content = await f.read()
+                    patterns_data = json.loads(content)
+
+                    for name, data in patterns_data.items():
+                        self.patterns[name] = LogPattern(**data)
+        except Exception as e:
+            self.logger.warning(f"Failed to load patterns: {e}")
+
+    async def _save_patterns(self):
+        """Save patterns to storage."""
+        try:
+            patterns_file = self.storage_path / "patterns.json"
+            patterns_data = {
+                name: asdict(pattern) for name, pattern in self.patterns.items()
+            }
+
+            async with aiofiles.open(patterns_file, "w") as f:
+                await f.write(json.dumps(patterns_data, indent=2))
+        except Exception as e:
+            self.logger.warning(f"Failed to save patterns: {e}")
+
+    async def _setup_default_patterns(self):
+        """Set up default monitoring patterns."""
+        default_patterns = [
+            LogPattern(
+                name="error_detection",
+                pattern=r"(?i)error|exception|failed|failure",
+                level=LogLevel.ERROR,
+                action="alert",
+            ),
+            LogPattern(
+                name="warning_detection",
+                pattern=r"(?i)warn|warning|deprecated",
+                level=LogLevel.WARNING,
+                action="log",
+            ),
+        ]
+
+        for pattern in default_patterns:
+            if pattern.name not in self.patterns:
+                self.patterns[pattern.name] = pattern
+
+    async def _rotate_logs(self):
+        """Rotate old log files."""
+        try:
+            # Simple rotation - remove files older than 30 days
+            cutoff_date = datetime.now() - timedelta(days=30)
+
+            for log_file in self.storage_path.glob("*.log"):
+                if log_file.stat().st_mtime < cutoff_date.timestamp():
+                    log_file.unlink()
+                    self.logger.info(f"Rotated old log file: {log_file}")
+        except Exception as e:
+            self.logger.warning(f"Failed to rotate logs: {e}")
+
+    async def _update_stats(self, entry: LogEntry):
+        """Update log statistics."""
+        self.stats.total_entries += 1
+
+        if entry.level == LogLevel.ERROR:
+            self.stats.error_count += 1
+            self.stats.last_error_time = entry.timestamp
+        elif entry.level == LogLevel.WARNING:
+            self.stats.warning_count += 1
+        elif entry.level == LogLevel.INFO:
+            self.stats.info_count += 1
+        elif entry.level == LogLevel.DEBUG:
+            self.stats.debug_count += 1
+
+        # Update hourly stats
+        hour_key = entry.timestamp.strftime("%Y-%m-%d %H:00")
+        self.stats.entries_per_hour[hour_key] = (
+            self.stats.entries_per_hour.get(hour_key, 0) + 1
+        )
+
+        # Update source stats
+        source_name = entry.source.value
+        self.stats.top_sources[source_name] = (
+            self.stats.top_sources.get(source_name, 0) + 1
+        )
+
+        # Update average message length
+        total_length = self.stats.avg_message_length * (
+            self.stats.total_entries - 1
+        ) + len(entry.message)
+        self.stats.avg_message_length = total_length / self.stats.total_entries
+
+    async def _check_patterns(self, entry: LogEntry):
+        """Check entry against monitoring patterns."""
+        for pattern in self.patterns.values():
+            if not pattern.enabled:
+                continue
+
+            try:
+                if re.search(pattern.pattern, entry.message):
+                    pattern.match_count += 1
+                    pattern.last_match = entry.timestamp
+
+                    await self.event_emitter.emit(
+                        LogEventType.PATTERN_MATCHED.value,
+                        {
+                            "pattern": pattern.name,
+                            "entry": asdict(entry),
+                            "action": pattern.action,
+                        },
+                    )
+            except re.error as e:
+                self.logger.warning(f"Invalid regex pattern '{pattern.name}': {e}")
+
+    async def _notify_subscribers(self, entry: LogEntry):
+        """Notify real-time subscribers."""
+        for subscriber_id, subscriber_info in self.subscribers.items():
+            try:
+                callback = subscriber_info["callback"]
+                filter_config = subscriber_info.get("filter")
+
+                # Apply filter if specified
+                if filter_config:
+                    # Simple filter check - in production would be more comprehensive
+                    if filter_config.levels and entry.level not in filter_config.levels:
+                        continue
+                    if (
+                        filter_config.sources
+                        and entry.source not in filter_config.sources
+                    ):
+                        continue
+
+                # Call the callback
+                if callable(callback):
+                    await callback(entry)
+
+            except Exception as e:
+                self.logger.warning(f"Failed to notify subscriber {subscriber_id}: {e}")
 
     async def add_log_entry(
         self,
@@ -584,6 +732,32 @@ class LogService:
             self.logger.error(f"Failed to export logs: {str(e)}")
             raise LogError(f"Failed to export logs: {str(e)}")
 
+    async def _export_json(self, logs: List[LogEntry], output_path: Path):
+        """Export logs as JSON."""
+        data = [asdict(log) for log in logs]
+        async with aiofiles.open(output_path, "w") as f:
+            await f.write(json.dumps(data, indent=2, default=str))
+
+    async def _export_csv(self, logs: List[LogEntry], output_path: Path):
+        """Export logs as CSV."""
+        # Basic CSV export - would use proper CSV library in production
+        header = "timestamp,level,source,message,project_id,process_id\n"
+        async with aiofiles.open(output_path, "w") as f:
+            await f.write(header)
+            for log in logs:
+                line = (
+                    f"{log.timestamp},{log.level.value},{log.source.value},"
+                    f'"{log.message}",{log.project_id or ""},{log.process_id or ""}\n'
+                )
+                await f.write(line)
+
+    async def _export_txt(self, logs: List[LogEntry], output_path: Path):
+        """Export logs as plain text."""
+        async with aiofiles.open(output_path, "w") as f:
+            for log in logs:
+                line = f"[{log.timestamp}] {log.level.value} - {log.message}\n"
+                await f.write(line)
+
     async def add_pattern(self, pattern: LogPattern) -> bool:
         """Add a log monitoring pattern."""
         try:
@@ -636,7 +810,18 @@ class LogService:
         self, filter_config: Optional[LogFilter] = None
     ) -> AsyncGenerator[LogEntry, None]:
         """Stream logs in real-time."""
-        pass
+        # Placeholder implementation
+        # In production, would implement proper streaming
+        while True:
+            # Yield recent logs
+            recent_logs = list(self.storage.recent_logs)
+            for log in recent_logs:
+                yield log
+
+            # Wait before next batch
+            import asyncio
+
+            await asyncio.sleep(1)
 
 
 def get_log_service() -> LogService:

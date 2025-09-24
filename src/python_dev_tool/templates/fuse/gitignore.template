@@ -1,3 +1,8 @@
+# - Auto Generated .gitignore
+# - FUSE
+#
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -60,3 +65,5 @@ Thumbs.db
 .fuse/logs/
 .fuse/cache/
 .fuse/tmp/
+.fuse/*
+

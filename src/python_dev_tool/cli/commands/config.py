@@ -2,6 +2,7 @@
 FUSE - (python dev tool) - CLI Commands - Config Command
 CLI - Config Command
 """
+
 from pathlib import Path
 from typing import Dict, Any, Optional
 from dataclasses import dataclass

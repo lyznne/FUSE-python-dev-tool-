@@ -10,6 +10,7 @@ from python_dev_tool.cli.main import app
 
 runner = CliRunner()
 
+
 # Fix for the initialized_project fixture
 @pytest.fixture
 def initialized_project(tmp_path):
@@ -86,6 +87,7 @@ def initialized_project(tmp_path):
 
     return project_dir
 
+
 def test_init_command(tmp_path, monkeypatch):
     """Test the init command with proper setup."""
     # Create a fresh directory for init command
@@ -129,10 +131,12 @@ def test_init_command(tmp_path, monkeypatch):
     assert result.exit_code == 0, f"Init failed: {result.stdout}"
     assert (project_path / ".fuse" / "config.toml").exists()
 
+
 def test_init_command_with_existing_project(tmp_path, monkeypatch):
     """Test the init command with an existing project."""
     # Create a directory with existing files
     assert True == True  # Placeholder for actual test logic
+
 
 def test_dev_command(initialized_project):
     """Test the dev command with proper setup."""
@@ -149,8 +153,6 @@ def test_dev_command(initialized_project):
             print(f"Dev command debug - Exception: {result.exception}")
 
     assert result.exit_code == 0, f"Dev command failed: {result.stdout}"
-
-
 
 
 def test_build_command(initialized_project):
@@ -184,11 +186,15 @@ def test_status_command(initialized_project):
 
     if result.exit_code != 0:
         print(f"Status command debug - STDOUT: {result.stdout}")
-        print(f"Status command debug - Config path: {initialized_project / '.fuse' / 'config.toml'}")
-        print(f"Status command debug - Config exists: {(initialized_project / '.fuse' / 'config.toml').exists()}")
+        print(
+            f"Status command debug - Config path: {initialized_project / '.fuse' / 'config.toml'}"
+        )
+        print(
+            f"Status command debug - Config exists: {(initialized_project / '.fuse' / 'config.toml').exists()}"
+        )
 
         # Read and print the config content for debugging
-        config_path = initialized_project / '.fuse' / 'config.toml'
+        config_path = initialized_project / ".fuse" / "config.toml"
         if config_path.exists():
             print(f"Config content: {config_path.read_text()}")
 

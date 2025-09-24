@@ -15,12 +15,12 @@ from pydantic import BaseModel
 from python_dev_tool.web.models.log import LogLevel, LogSource
 
 
-
 router = APIRouter()
 
 
 class LogResponse(BaseModel):
     """Response model for log data"""
+
     id: str
     message: str
     level: LogLevel
@@ -32,8 +32,10 @@ class LogResponse(BaseModel):
     tags: List[str]
     structured_data: Dict[str, Any]
 
+
 class LogListResponse(BaseModel):
     """Response model for a list of logs"""
+
     logs: List[LogResponse]
     total: int
     page: int

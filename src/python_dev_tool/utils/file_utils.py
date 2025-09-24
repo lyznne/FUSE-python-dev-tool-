@@ -228,12 +228,12 @@ class FileUtils:
         if not folder_path.exists():
             raise FileNotFoundError(f"Folder not found: {folder_path}")
 
-        for item  in folder_path.rglob('*'):
+        for item in folder_path.rglob("*"):
             if item.is_file():
                 try:
                     total_size += item.stat().st_size
                 except (OSError, FileNotFoundError) as e:
                     logger.warning(f"Could not get size for {item}: {e}")
                     continue
-                
+
         return total_size

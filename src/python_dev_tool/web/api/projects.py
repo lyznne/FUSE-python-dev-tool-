@@ -3,7 +3,6 @@ FUSE - (python dev tool) - Web App
 api/projects.py - Projects API
 """
 
-
 # sys
 import logging
 from datetime import datetime
@@ -56,6 +55,7 @@ class ProjectListResponse(BaseModel):
     per_page: int
     has_next: bool
     has_prev: bool
+
 
 @router.get("/", response_model=ProjectListResponse)
 async def list_projects(

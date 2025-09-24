@@ -22,6 +22,7 @@ from python_dev_tool.core.globals import (
 @dataclass
 class FrameworkInfo:
     """Information about a detected framework."""
+
     name: str
     version: Optional[str] = None
     confidence: float = 0.0
@@ -43,8 +44,6 @@ class FrameworkInfo:
             self.entry_points = []
 
 
-
-
 class FrameworkDetector:
     """Detects and analyzes Python frameworks."""
 
@@ -57,7 +56,7 @@ class FrameworkDetector:
         self.detected_frameworks: Dict[str, FrameworkInfo] = {}
 
         # Framework patterns
-        self.FRAMEWORK_PATTERNS  = FRAMEWORK_PATTERNS
+        self.FRAMEWORK_PATTERNS = FRAMEWORK_PATTERNS
 
     def detect_framework(self, project_path: Optional[Path] = None) -> Optional[str]:
         """

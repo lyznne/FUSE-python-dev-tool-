@@ -43,8 +43,7 @@ class StatusCommand:
         check_deps: bool = True,
         event_bus: Optional[EventBus] = None,
     ):
-        actual_path  =  self._find_project_root(project_path)
-
+        actual_path = self._find_project_root(project_path)
 
         self.options = StatusOptions(
             project_path=actual_path, detailed=detailed, check_deps=check_deps
@@ -64,18 +63,18 @@ class StatusCommand:
             raise DevToolError(f"Status check failed: {e}")
 
     def _find_project_root(self, start_path: Path) -> Path:
-        """Find the project root by looking for .devtool directory."""
+        """Find the project root by looking for .fuse directory."""
         current_path = start_path.resolve()
 
         # First, check if the provided path is already the project root
-        devtool_path = current_path / ".devtool"
+        devtool_path = current_path / ".fuse"
         config_path = devtool_path / "config.toml"
         if devtool_path.exists() and devtool_path.is_dir() and config_path.exists():
             return current_path
 
         # If not found, traverse up the directory tree
         while current_path != current_path.parent:
-            devtool_path = current_path / ".devtool"
+            devtool_path = current_path / ".fuse"
             config_path = devtool_path / "config.toml"
             if devtool_path.exists() and devtool_path.is_dir() and config_path.exists():
                 return current_path
@@ -92,18 +91,23 @@ class StatusCommand:
             raise DevToolError(f"Project directory does not exist: {project_path}")
 
         # Check for DevTool configuration
-        config_path = project_path / ".devtool" / "config.toml"
+        config_path = project_path / ".fuse" / "config.toml"
         if not config_path.exists():
             raise DevToolError(f"Config file not found at: {config_path}")
 
         # Validate that the config can be loaded
         try:
             from python_dev_tool.core.config import Config
+
             config = Config.load_project_config(project_path)
             if not config:
-                self.console.print("[yellow]Warning: Config file exists but could not be loaded properly[/yellow]")
+                self.console.print(
+                    "[yellow]Warning: Config file exists but could not be loaded properly[/yellow]"
+                )
         except Exception as e:
-            self.console.print(f"[yellow]Warning: Config validation failed: {e}[/yellow]")
+            self.console.print(
+                f"[yellow]Warning: Config validation failed: {e}[/yellow]"
+            )
 
         # Check other essential files (non-fatal warnings)
         essential_files = [
@@ -118,10 +122,9 @@ class StatusCommand:
                 missing_files.append(f"{desc} (expected at: {full_path})")
 
         if missing_files:
-            self.console.print(f"[yellow]Warning: Missing files: {', '.join(missing_files)}[/yellow]")
-
-
-
+            self.console.print(
+                f"[yellow]Warning: Missing files: {', '.join(missing_files)}[/yellow]"
+            )
 
     def _gather_status_info(self) -> Dict[str, Any]:
         """Collect comprehensive status information."""
@@ -168,7 +171,7 @@ class StatusCommand:
                 return {
                     "framework": "unknown",
                     "framework_version": "None",
-                    "framework_confidence": 0.0
+                    "framework_confidence": 0.0,
                 }
 
             return {
@@ -183,7 +186,7 @@ class StatusCommand:
                 "framework": "error",
                 "framework_version": "None",
                 "framework_confidence": 0.0,
-                "error": str(e)
+                "error": str(e),
             }
 
     def _get_process_status(self) -> Dict[str, Any]:
@@ -223,8 +226,8 @@ class StatusCommand:
         """Get comprehensive dependency information."""
         try:
             from python_dev_tool.core.config import Config
-            config = Config.load_project_config(self.options.project_path)
 
+            config = Config.load_project_config(self.options.project_path)
 
             if not config:
                 return {"status": "no_config", "vulnerable": [], "outdated": []}
@@ -245,7 +248,12 @@ class StatusCommand:
 
         except Exception as e:
             self.console.print(f"[red]Status error: Invalid configuration: {e}[/red]")
-            return {"status": "config_error", "error": str(e), "vulnerable": [], "outdated": []}
+            return {
+                "status": "config_error",
+                "error": str(e),
+                "vulnerable": [],
+                "outdated": [],
+            }
 
     def _get_performance_metrics(self) -> Dict[str, Any]:
         """Get real performance metrics."""
@@ -269,7 +277,7 @@ class StatusCommand:
 
     def _get_recent_logs(self, count: int = 10) -> List[Dict[str, str]]:
         """Get structured recent logs with levels."""
-        log_file = self.options.project_path / ".devtool/logs/dev.log"
+        log_file = self.options.project_path / ".fuse/logs/dev.log"
         if not log_file.exists():
             return []
 

@@ -106,7 +106,6 @@ class ProjectService:
             self._config = Config()
         return self._config
 
-
     async def initialize(self):
         """Initialize the project service."""
         self.logger.info("Initializing ProjectService...")
@@ -390,7 +389,7 @@ class ProjectService:
         if not project:
             raise ProjectError(f"Project not found: {project_id}")
 
-        config_path = Path(project.path) / ".devtool" / "config.toml"
+        config_path = Path(project.path) / ".fuse" / "config.toml"
 
         if not config_path.exists():
             return {}
@@ -412,7 +411,7 @@ class ProjectService:
             raise ProjectError(f"Project not found: {project_id}")
 
         try:
-            config_path = Path(project.path) / ".devtool" / "config.toml"
+            config_path = Path(project.path) / ".fuse" / "config.toml"
             config_path.parent.mkdir(exist_ok=True)
 
             with open(config_path, "w") as f:
@@ -486,7 +485,7 @@ class ProjectService:
 
     async def _create_project_config(self, project: Project):
         """Create project configuration file."""
-        config_dir = Path(project.path) / ".devtool"
+        config_dir = Path(project.path) / ".fuse"
         config_dir.mkdir(exist_ok=True)
 
         config_path = config_dir / "config.toml"

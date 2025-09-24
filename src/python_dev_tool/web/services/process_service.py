@@ -22,6 +22,7 @@ from python_dev_tool.utils.network_utils import NetworkUtils
 
 class ProcessEventType(Enum):
     """Process event types."""
+
     PROCESS_CREATED = "process_created"
     PROCESS_STARTED = "process_started"
     PROCESS_STOPPED = "process_stopped"
@@ -34,6 +35,7 @@ class ProcessEventType(Enum):
 @dataclass
 class ProcessMetrics:
     """Process performance metrics."""
+
     cpu_percent: float
     memory_percent: float
     memory_mb: int
@@ -47,6 +49,7 @@ class ProcessMetrics:
 @dataclass
 class ProcessCommand:
     """Process command configuration."""
+
     command: str
     args: List[str]
     cwd: str
@@ -57,7 +60,7 @@ class ProcessCommand:
 class ProcessMonitor:
     """Monitor process health and performance."""
 
-    def __init__(self, process_service: 'ProcessService'):
+    def __init__(self, process_service: "ProcessService"):
         self.process_service = process_service
         self.logger = logging.getLogger(f"{__name__}.ProcessMonitor")
         self.monitoring_tasks: Dict[str, asyncio.Task] = {}
@@ -133,7 +136,7 @@ class ProcessMonitor:
                 threads=psutil_process.num_threads(),
                 uptime=uptime,
                 restart_count=process.restart_count or 0,
-                last_restart=process.last_restart
+                last_restart=process.last_restart,
             )
 
         except (psutil.NoSuchProcess, psutil.AccessDenied):
@@ -153,8 +156,9 @@ class ProcessMonitor:
 class ProcessService:
     """Core process management service."""
 
-    def __init__(self):
-        self.logger = logging.getLogger(__name__)
+    def __init__(self, config=None, logger=None, **kwargs):
+        self.logger = logger or logging.getLogger(__name__)
+        self.config = config
         self.processes: Dict[str, Process] = {}
         self.subprocesses: Dict[str, subprocess.Popen] = {}
         self.metrics: Dict[str, ProcessMetrics] = {}
@@ -193,7 +197,7 @@ class ProcessService:
         process_type: ProcessType = ProcessType.SERVER,
         auto_restart: bool = True,
         max_restarts: int = 3,
-        project_id: Optional[str] = None
+        project_id: Optional[str] = None,
     ) -> Process:
         """Create a new process."""
         try:
@@ -219,7 +223,7 @@ class ProcessService:
                 max_restarts=max_restarts,
                 port=port,
                 project_id=project_id,
-                created_at=datetime.now(timezone.utc)
+                created_at=datetime.now(timezone.utc),
             )
 
             # Store process
@@ -227,8 +231,7 @@ class ProcessService:
 
             # Emit event
             await self.event_emitter.emit(
-                ProcessEventType.PROCESS_CREATED.value,
-                {"process": asdict(process)}
+                ProcessEventType.PROCESS_CREATED.value, {"process": asdict(process)}
             )
 
             self.logger.info(f"Created process: {name} ({process_id})")
@@ -261,7 +264,7 @@ class ProcessService:
 
             # Add port to environment if available
             if process.port:
-                env['PORT'] = str(process.port)
+                env["PORT"] = str(process.port)
 
             # Start subprocess
             subprocess_proc = await asyncio.create_subprocess_exec(
@@ -270,7 +273,7 @@ class ProcessService:
                 env=env,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                stdin=asyncio.subprocess.PIPE
+                stdin=asyncio.subprocess.PIPE,
             )
 
             # Store subprocess
@@ -283,8 +286,7 @@ class ProcessService:
 
             # Emit event
             await self.event_emitter.emit(
-                ProcessEventType.PROCESS_STOPPED.value,
-                {"process": asdict(process)}
+                ProcessEventType.PROCESS_STOPPED.value, {"process": asdict(process)}
             )
 
             self.logger.info(f"Stopped process: {process.name} ({process_id})")
@@ -322,8 +324,7 @@ class ProcessService:
 
             # Emit event
             await self.event_emitter.emit(
-                ProcessEventType.PROCESS_RESTARTED.value,
-                {"process": asdict(process)}
+                ProcessEventType.PROCESS_RESTARTED.value, {"process": asdict(process)}
             )
 
             self.logger.info(f"Restarted process: {process.name} ({process_id})")
@@ -368,7 +369,8 @@ class ProcessService:
     async def get_processes_by_source(self, project_id: str) -> List[Process]:
         """Get processes for a specific project."""
         return [
-            process for process in self.processes.values()
+            process
+            for process in self.processes.values()
             if process.project_id == project_id
         ]
 
@@ -377,10 +379,7 @@ class ProcessService:
         return self.metrics.get(process_id)
 
     async def get_process_output(
-        self,
-        process_id: str,
-        lines: int = 100,
-        stream: str = "both"
+        self, process_id: str, lines: int = 100, stream: str = "both"
     ) -> Dict[str, List[str]]:
         """Get process output."""
         process = self.processes.get(process_id)
@@ -389,10 +388,7 @@ class ProcessService:
 
         # This would typically read from log files or in-memory buffers
         # For now, return empty structure
-        return {
-            "stdout": [],
-            "stderr": []
-        }
+        return {"stdout": [], "stderr": []}
 
     async def send_input(self, process_id: str, input_data: str) -> bool:
         """Send input to a process."""
@@ -456,8 +452,7 @@ class ProcessService:
     async def health_check(self) -> Dict[str, Any]:
         """Health check for the process service."""
         running_processes = [
-            p for p in self.processes.values()
-            if p.status == ProcessStatus.RUNNING
+            p for p in self.processes.values() if p.status == ProcessStatus.RUNNING
         ]
 
         return {
@@ -465,7 +460,7 @@ class ProcessService:
             "processes_count": len(self.processes),
             "running_processes": len(running_processes),
             "monitoring_tasks": len(self.monitor.monitoring_tasks),
-            "subprocesses": len(self.subprocesses)
+            "subprocesses": len(self.subprocesses),
         }
 
     # Private methods
@@ -476,14 +471,14 @@ class ProcessService:
             return
 
         # Handle stdout
-        asyncio.create_task(self._read_stream(
-            process_id, subprocess_proc.stdout, "stdout"
-        ))
+        asyncio.create_task(
+            self._read_stream(process_id, subprocess_proc.stdout, "stdout")
+        )
 
         # Handle stderr
-        asyncio.create_task(self._read_stream(
-            process_id, subprocess_proc.stderr, "stderr"
-        ))
+        asyncio.create_task(
+            self._read_stream(process_id, subprocess_proc.stderr, "stderr")
+        )
 
     async def _read_stream(self, process_id: str, stream, stream_type: str):
         """Read from a process stream."""
@@ -493,7 +488,7 @@ class ProcessService:
                 if not line:
                     break
 
-                line_str = line.decode('utf-8', errors='replace').strip()
+                line_str = line.decode("utf-8", errors="replace").strip()
 
                 # Emit output event
                 event_type = (
@@ -502,15 +497,20 @@ class ProcessService:
                     else ProcessEventType.ERROR_RECEIVED.value
                 )
 
-                await self.event_emitter.emit(event_type, {
-                    "process_id": process_id,
-                    "output": line_str,
-                    "stream": stream_type,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                })
+                await self.event_emitter.emit(
+                    event_type,
+                    {
+                        "process_id": process_id,
+                        "output": line_str,
+                        "stream": stream_type,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    },
+                )
 
         except Exception as e:
-            self.logger.error(f"Error reading {stream_type} for process {process_id}: {str(e)}")
+            self.logger.error(
+                f"Error reading {stream_type} for process {process_id}: {str(e)}"
+            )
 
     async def _handle_process_crash(self, process_id: str):
         """Handle process crash."""
@@ -524,8 +524,7 @@ class ProcessService:
 
         # Emit crash event
         await self.event_emitter.emit(
-            ProcessEventType.PROCESS_CRASHED.value,
-            {"process": asdict(process)}
+            ProcessEventType.PROCESS_CRASHED.value, {"process": asdict(process)}
         )
 
         self.logger.warning(f"Process crashed: {process.name} ({process_id})")
@@ -585,8 +584,7 @@ class ProcessService:
 
             # Emit event
             await self.event_emitter.emit(
-                ProcessEventType.PROCESS_STOPPED.value,
-                {"process": asdict(process)}
+                ProcessEventType.PROCESS_STOPPED.value, {"process": asdict(process)}
             )
 
             self.logger.info(f"Stopped process: {process.name} ({process_id})")

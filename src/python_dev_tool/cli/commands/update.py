@@ -3,6 +3,7 @@ FUSE - (python dev tool) - CLI Commands - Update Command
 CLI - Update Command
 Handles updating the python-dev-tool to latest or specific versions
 """
+
 # sys imports
 from dataclasses import dataclass
 import os
@@ -32,6 +33,7 @@ class UpdateOptions:
     force: bool
     check_only: bool
     verbose: bool
+
 
 class UpdateCommand:
     """Command to update the python-dev-tool"""

@@ -16,20 +16,59 @@ class ProjectValidator:
     """Validator for project initialization and configuration."""
 
     # Valid project name pattern (Python package naming convention)
-    PROJECT_NAME_PATTERN = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*')
+    PROJECT_NAME_PATTERN = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*")
 
     # Reserved Python keywords and built-in names
-    RESERVED_NAMES = set(keyword.kwlist + [
-        'python', 'pip', 'setuptools', 'wheel', 'django', 'flask',
-        'fastapi', 'streamlit', 'tornado', 'sanic', 'test', 'tests',
-        'src', 'lib', 'bin', 'etc', 'var', 'tmp', 'home', 'root'
-    ])
+    RESERVED_NAMES = set(
+        keyword.kwlist
+        + [
+            "python",
+            "pip",
+            "setuptools",
+            "wheel",
+            "django",
+            "flask",
+            "fastapi",
+            "streamlit",
+            "tornado",
+            "sanic",
+            "test",
+            "tests",
+            "src",
+            "lib",
+            "bin",
+            "etc",
+            "var",
+            "tmp",
+            "home",
+            "root",
+        ]
+    )
 
     # Blocked directory names
     BLOCKED_DIRECTORIES = {
-        'con', 'prn', 'aux', 'nul',  # Windows reserved
-        'com1', 'com2', 'com3', 'com4', 'com5', 'com6', 'com7', 'com8', 'com9',
-        'lpt1', 'lpt2', 'lpt3', 'lpt4', 'lpt5', 'lpt6', 'lpt7', 'lpt8', 'lpt9'
+        "con",
+        "prn",
+        "aux",
+        "nul",  # Windows reserved
+        "com1",
+        "com2",
+        "com3",
+        "com4",
+        "com5",
+        "com6",
+        "com7",
+        "com8",
+        "com9",
+        "lpt1",
+        "lpt2",
+        "lpt3",
+        "lpt4",
+        "lpt5",
+        "lpt6",
+        "lpt7",
+        "lpt8",
+        "lpt9",
     }
 
     def validate_project_name(self, name: str) -> bool:
@@ -50,9 +89,7 @@ class ProjectValidator:
             )
 
         if name.lower() in self.BLOCKED_DIRECTORIES:
-            raise DevToolError(
-                f"Project name '{name}' is not allowed on this system."
-            )
+            raise DevToolError(f"Project name '{name}' is not allowed on this system.")
 
         if len(name) > 50:
             raise DevToolError("Project name must be 50 characters or less")
@@ -96,17 +133,23 @@ class ProjectValidator:
                     try:
                         parent.mkdir(parents=True, exist_ok=True)
                     except PermissionError:
-                        raise DevToolError(f"Cannot create parent directories: {parent}")
+                        raise DevToolError(
+                            f"Cannot create parent directories: {parent}"
+                        )
 
                 if not os.access(parent, os.W_OK):
-                    raise DevToolError(f"No write permission for parent directory: {parent}")
+                    raise DevToolError(
+                        f"No write permission for parent directory: {parent}"
+                    )
 
             return True
 
         except OSError as e:
             raise DevToolError(f"Invalid project path: {e}")
 
-    def validate_framework(self, framework: str, supported_frameworks: List[str]) -> bool:
+    def validate_framework(
+        self, framework: str, supported_frameworks: List[str]
+    ) -> bool:
         """Validate framework selection."""
         if framework not in supported_frameworks:
             raise DevToolError(

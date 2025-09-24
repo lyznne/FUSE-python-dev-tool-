@@ -9,19 +9,24 @@ from pydantic import BaseModel
 
 class LogEntry(BaseModel):
     """Log entry model for managing logs in the web application."""
+
     timestamp: str
     message: str
 
+
 class LogLevel(str, Enum):
     """Log levels."""
+
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
     CRITICAL = "critical"
 
+
 class LogSource(str, Enum):
     """Log sources."""
+
     APPLICATION = "application"
     DJANGO = "django"
     FLASK = "flask"

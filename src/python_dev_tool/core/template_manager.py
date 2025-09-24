@@ -22,6 +22,7 @@ from rich.panel import Panel
 @dataclass
 class CommandResult:
     """Result of a command execution."""
+
     success: bool
     output: str
     error: Optional[str] = None
@@ -124,7 +125,7 @@ class TemplateManager:
                 capture_output=True,
                 text=True,
                 check=False,
-                shell=False  # prevent shell injection
+                shell=False,  # prevent shell injection
             )
 
             if not silent:
@@ -242,8 +243,9 @@ class TemplateManager:
             )
             return False
 
-    def copy_template_directory(self, template_dir: Path, output_dir: Path, data: Dict[str, Any]) -> None:
-
+    def copy_template_directory(
+        self, template_dir: Path, output_dir: Path, data: Dict[str, Any]
+    ) -> None:
         """
         Recursively copy a template directory and apply data substitutions.
 
@@ -252,7 +254,7 @@ class TemplateManager:
             output_dir: Destination directory
             data: Data for template substitutions
         """
-        src_dir  =  self.templates_dir / template_dir
+        src_dir = self.templates_dir / template_dir
 
         if not src_dir.exists():
             raise FileNotFoundError(f"Template directory {template_dir} not found")
@@ -261,15 +263,16 @@ class TemplateManager:
             if src_path.is_file():
                 rel_path = src_path.relative_to(self.templates_dir)
                 dest_path = output_dir / rel_path
-                if src_path.suffix == '.template':
+                if src_path.suffix == ".template":
                     # Process template files
-                    self.create_from_template(str(rel_path), dest_path.with_suffix(''), data)
+                    self.create_from_template(
+                        str(rel_path), dest_path.with_suffix(""), data
+                    )
                 else:
                     # Copy non-template files
                     dest_path.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(src_path, dest_path)
                     self.console.print(f"[green]✓ Copied {dest_path}[/green]")
-
 
     def create_project_structure(
         self,

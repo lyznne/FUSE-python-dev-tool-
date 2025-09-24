@@ -28,6 +28,7 @@ class BuildOptions:
     clean: bool = False
     optimize: bool = True
 
+
 class BuildCommand:
     """Command for building projects."""
 

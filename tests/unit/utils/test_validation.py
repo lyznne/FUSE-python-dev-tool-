@@ -66,7 +66,6 @@ class TestValidateProjectPath:
         result = validate_project_path(empty_dir2, check_empty=True)
         assert result == empty_dir2.resolve()
 
-
     def test_relative_path_conversion(self):
         relative_path = Path("relative/path")
         result = validate_project_path(relative_path, must_exist=False)
@@ -77,6 +76,7 @@ class TestValidateProjectPath:
         hidden_dir.mkdir()
         result = validate_project_path(hidden_dir, allow_hidden=True)
         assert result == hidden_dir.resolve()
+
 
 class TestValidateName:
     def test_valid_name(self):

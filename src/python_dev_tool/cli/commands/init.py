@@ -40,7 +40,6 @@ class InitOptions:
     python_executable: Optional[str] = None
 
 
-
 class InitCommand:
     """Command for initializing new Python projects with FUSE dev tools."""
 
@@ -55,7 +54,7 @@ class InitCommand:
     }
 
     def __init__(self, options: InitOptions):
-        self.options =  options
+        self.options = options
         self.console = Console()
         self.detector = FrameworkDetector()
         self.validator = ProjectValidator()
@@ -107,6 +106,9 @@ class InitCommand:
         if self.options.verbose:
             self.console.print(f"[cyan]Analyzing project at: {project_path}[/cyan]")
 
+        # check first the current dir ( "." )
+
+
         # Check if directory exists and is empty
         is_empty = not project_path.exists() or not any(project_path.iterdir())
 
@@ -156,7 +158,11 @@ class InitCommand:
         # Create project directory with project name
         new_project_path = self.options.project_path / self.options.name
 
-        if new_project_path.exists() and any(new_project_path.iterdir()) and not self.options.force:
+        if (
+            new_project_path.exists()
+            and any(new_project_path.iterdir())
+            and not self.options.force
+        ):
             self.console.print(
                 Panel(
                     f"[yellow]✗ Directory {new_project_path} already exists and is not empty.[/yellow]\n"
@@ -165,7 +171,9 @@ class InitCommand:
                     border_style="yellow",
                 )
             )
-            raise DevToolError("Directory exists and is not empty. Use --force to overwrite.")
+            raise DevToolError(
+                "Directory exists and is not empty. Use --force to overwrite."
+            )
 
         new_project_path.mkdir(parents=True, exist_ok=True)
         self.options.project_path = new_project_path
@@ -184,7 +192,9 @@ class InitCommand:
                     border_style="yellow",
                 )
             )
-            if not self.options.force and not Confirm.ask("Do you want to reinitialize the project?"):
+            if not self.options.force and not Confirm.ask(
+                "Do you want to reinitialize the project?"
+            ):
                 raise DevToolError("Initialization cancelled by user")
 
         # Auto-detect framework if not specified
@@ -193,8 +203,6 @@ class InitCommand:
             self.console.print(
                 f"[green]✓ Detected framework:[/green] [bold]{self.options.framework}[/bold]"
             )
-
-
 
     def _interactive_setup(self) -> None:
         """Interactive setup for missing configuration."""
@@ -285,6 +293,7 @@ class InitCommand:
             console=self.console,
         ):
             raise DevToolError("Configuration cancelled by user")
+
     def _create_project_files(self) -> None:
         """Create all project files including FUSE config, README, etc."""
         # Create .fuse directory and config
@@ -296,6 +305,9 @@ class InitCommand:
         self._create_readme_file()
         self.console.print("[green]✓ Created README.md[/green]")
 
+        # Initialize .git
+        self._init_git()
+
         # Create .gitignore if not exists
         if not (self.options.project_path / ".gitignore").exists():
             self._create_gitignore()
@@ -304,7 +316,101 @@ class InitCommand:
     def _get_current_year(self) -> str:
         """Get current year."""
         from datetime import datetime
+
         return str(datetime.now().year)
+
+    def _init_git(self):
+        """Initialize git repository with proper error handling."""
+        try:
+            self.console.print("[cyan]Initializing git repository...[/cyan]")
+
+            # Check if git is available
+            git_check = self.template_manager.run_command(
+                ["git", "--version"], silent=True
+            )
+
+            if not git_check.success:
+                self.console.print(
+                    "[yellow]⚠️ Git is not installed or not available in PATH[/yellow]"
+                )
+                self.next_steps.append(
+                    "Install Git and initialize repository manually: git init"
+                )
+                return
+
+            # Check if already a git repository
+            git_dir = self.options.project_path / ".git"
+            if git_dir.exists():
+                self.console.print(
+                    "[cyan]Git repository already exists, skipping initialization[/cyan]"
+                )
+                return
+
+            # Initialize git repository
+            result = self.template_manager.run_command(
+                ["git", "init"],
+                cwd=self.options.project_path,
+                silent=not self.options.verbose,
+            )
+
+            if result.success:
+                self.console.print("[green]✓ Git repository initialized[/green]")
+
+                # Try to make initial commit if there are files
+                if any(self.options.project_path.iterdir()):
+                    self._make_initial_commit()
+            else:
+                self.console.print(
+                    f"[yellow]⚠️ Failed to initialize git repository: {result.error}[/yellow]"
+                )
+                self.next_steps.append("Initialize git repository manually: git init")
+
+        except Exception as e:
+            self.console.print(
+                f"[yellow]⚠️ Error during git initialization: {str(e)}[/yellow]"
+            )
+            self.next_steps.append("Initialize git repository manually: git init")
+
+    def _make_initial_commit(self):
+        """Make an initial commit with project files."""
+        try:
+            # Add all files
+            add_result = self.template_manager.run_command(
+                ["git", "add", "."],
+                cwd=self.options.project_path,
+                silent=not self.options.verbose,
+            )
+
+            if add_result.success:
+                # Make initial commit
+                commit_result = self.template_manager.run_command(
+                    ["git", "commit", "-m", f"Initial commit for {self.options.name}"],
+                    cwd=self.options.project_path,
+                    silent=not self.options.verbose,
+                )
+
+                if commit_result.success:
+                    self.console.print("[green]✓ Made initial git commit[/green]")
+                else:
+                    # Don't treat commit failure as critical
+                    if self.options.verbose:
+                        self.console.print(
+                            f"[yellow]Initial commit failed: {commit_result.error}[/yellow]"
+                        )
+                    self.next_steps.append(
+                        "Make initial commit: git add . && git commit -m 'Initial commit'"
+                    )
+            else:
+                if self.options.verbose:
+                    self.console.print(
+                        f"[yellow]Git add failed: {add_result.error}[/yellow]"
+                    )
+
+        except Exception as e:
+            if self.options.verbose:
+                self.console.print(
+                    f"[yellow]Error making initial commit: {str(e)}[/yellow]"
+                )
 
     def _create_fuse_config(self) -> None:
         """Create FUSE configuration files."""
@@ -330,6 +436,12 @@ class InitCommand:
             }
         )
 
+        logging_config = {
+            "dir": str(logs_dir.relative_to(self.options.project_path)),
+            "level": "INFO",
+            "format": "default",
+        }
+
         # Prepare template context
         context = {
             "project_name": self.options.name,
@@ -347,14 +459,13 @@ class InitCommand:
             "commands": toml.dumps(commands).strip(),
             "environment": toml.dumps({}).strip(),
             "plugins": toml.dumps([]).strip(),
-            "debug": "true",
-            "testing": "false",
+            "debug": str(True).lower(),   # "true"
+            "testing": str(False).lower(), # "false"
             "year": self._get_current_year(),
-            "logging": {
-                "dir": str(logs_dir.relative_to(self.options.project_path)),
-                "level": "info",
-                "format": "default",
-            },
+            "logging": logging_config,
+            "logging_dir": logging_config["dir"],
+            "logging_level": logging_config["level"],
+            "logging_format": logging_config["format"],
         }
 
         # Create config.toml from template
@@ -372,9 +483,6 @@ class InitCommand:
     def _create_readme_file(self) -> None:
         """Create README.md file for the project."""
         framework_info = self.detector.get_framework_details(self.options.framework)
-
-        # print this for debugging
-        print(framework_info)
 
         context = {
             "project_name": self.options.name,
@@ -436,62 +544,97 @@ class InitCommand:
         """Setup virtual environment and install dependencies."""
         venv_path = self.options.project_path / ".venv"
 
-        if project_info["has_venv"]:
+        # Initialize venv tracking variables
+        self.venv_python = None
+        self.venv_pip = None
+
+        if project_info["has_venv"] and venv_path.exists():
             self.console.print(
-                "[cyan]Found existing virtual environment, attempting to activate...[/cyan]"
+                "[cyan]Found existing virtual environment, verifying...[/cyan]"
             )
-            if not self._activate_venv(venv_path):
-                self.next_steps.append(
-                    f"Activate virtual environment: {self._get_activation_command()}"
-                )
+            if self._activate_venv(venv_path):
                 self.console.print(
-                    "[yellow]⚠️ Could not activate virtual environment automatically[/yellow]"
+                    "[green]✓ Virtual environment verified and ready[/green]"
                 )
+            else:
+                self.console.print(
+                    "[yellow]⚠️ Existing virtual environment has issues[/yellow]"
+                )
+                if Confirm.ask(
+                    "Create a new virtual environment?",
+                    default=True,
+                    console=self.console,
+                ):
+                    # Remove old venv and create new one
+                    import shutil
+
+                    shutil.rmtree(venv_path, ignore_errors=True)
+                    self._create_virtualenv()
+                else:
+                    self.next_steps.append(
+                        f"Fix virtual environment or activate manually: {self._get_activation_command()}"
+                    )
+                    return
         else:
             self.console.print("[cyan]Creating virtual environment...[/cyan]")
             self._create_virtualenv()
-            self.console.print("[green]✓ Virtual environment created[/green]")
 
         if self.options.install_deps:
             self.console.print("[cyan]Installing dependencies...[/cyan]")
             self._create_requirements_file()
             self._install_dependencies(venv_path)
-            self.console.print("[green]✓ Dependencies installed[/green]")
-
-
+        else:
+            self.console.print(
+                "[cyan]Skipping dependency installation (--no-install-deps)[/cyan]"
+            )
 
     def _activate_venv(self, venv_path: Path) -> bool:
         """Attempt to activate the virtual environment."""
         try:
-            if sys.platform.startswith("win"): # TODO: Be more flexible
-                activate_script = venv_path / "Scripts" / "activate.bat"
+            if sys.platform.startswith("win"):  # TODO: Be more flexible
+                # Windows paths
+                python_exe = venv_path / "Scripts" / "python.exe"
+                pip_exe = venv_path / "Scripts" / "pip.exe"
             else:
-                activate_script = venv_path / "bin" / "activate"
+                # Unix-like systems
+                python_exe = venv_path / "bin" / "python"
+                pip_exe = venv_path / "bin" / "pip"
 
-            if not activate_script.exists():
+            if not python_exe.exists():
+                self.console.print(
+                    f"[yellow]Python executable not found: {python_exe}[/yellow]"
+                )
                 return False
 
-            # run command to activate the virtual environment
-            self.template_manager.run_command(
-                [str(activate_script)],
+            # Test if virtual environment is functional by running python --version
+            result = self.template_manager.run_command(
+                [str(python_exe), "--version"],
                 cwd=self.options.project_path,
                 silent=not self.options.verbose,
             )
 
-            return True
+            if result.success:
+                # store thepaths for later use in dependency installation
+                self.venv_python = str(python_exe)
+                self.venv_pip = str(pip_exe)
+                return True
+            else:
+                return False
+
         except Exception as e:
             self.console.print(
-                f"[yellow]⚠️ Failed to activate virtual environment: {str(e)}[/yellow]"
+                f"[yellow]⚠️ Failed to verfy virtual environment: {str(e)}[/yellow]"
             )
-
 
     def _create_virtualenv(self) -> None:
         """Create a Python virtual environment."""
         venv_path = self.options.project_path / ".venv"
         try:
             venv.create(venv_path, with_pip=True)
-            # activate the virtual environment
-            self._activate_venv(venv_path)
+            # verify the virtual env
+            if not self._activate_venv(venv_path):
+                raise DevToolError("Failed to create virtual environment")
+
         except Exception as e:
             raise DevToolError(f"Failed to create virtual environment: {str(e)}")
 
@@ -517,19 +660,50 @@ class InitCommand:
         self.console.print("[green]✓ Created requirements.txt[/green]")
 
     def _install_dependencies(self, venv_path: Path) -> None:
-        """Install project dependencies."""
+        """Install project dependencies using the virtual environment."""
         requirements_path = self.options.project_path / "requirements.txt"
-        pip_path = (
-            venv_path / ("Scripts" if sys.platform.startswith("win") else "bin") / "pip"
-        )
+
+        if not requirements_path.exists():
+            self.console.print(
+                "[yellow]No requirements.txt found, skipping dependency installation[/yellow]"
+            )
+            return
 
         try:
-            self.template_manager.run_command(
-                [str(pip_path), "install", "-r", str(requirements_path)],
-                cwd=self.options.project_path,
-                silent = not self.options.verbose, # Don't show output if verbose
+            # Use the stored venv python/pip paths if available, otherwise construct them
+            if hasattr(self, "venv_pip") and Path(self.venv_pip).exists():
+                pip_cmd = [self.venv_pip, "install", "-r", str(requirements_path)]
+            else:
+                # Fallback to constructing the path
+                if sys.platform.startswith("win"):
+                    pip_exe = venv_path / "Scripts" / "pip.exe"
+                else:
+                    pip_exe = venv_path / "bin" / "pip"
+                pip_cmd = [str(pip_exe), "install", "-r", str(requirements_path)]
+
+            self.console.print(
+                "[cyan]⏳ Installing dependencies — this might take a moment...[/cyan]"
             )
-        except subprocess.CalledProcessError as e:
+
+            result = self.template_manager.run_command(
+                pip_cmd,
+                cwd=self.options.project_path,
+                silent=not self.options.verbose,
+            )
+
+            if result.success:
+                self.console.print(
+                    "[green]✓ Dependencies installed successfully[/green]"
+                )
+            else:
+                self.console.print(
+                    f"[yellow]⚠️ Failed to install dependencies: {result.error}[/yellow]"
+                )
+                self.next_steps.append(
+                    f"Install dependencies manually: pip install -r {requirements_path}"
+                )
+
+        except Exception as e:
             self.console.print(
                 f"[yellow]⚠️ Failed to install dependencies: {str(e)}[/yellow]"
             )
@@ -561,11 +735,17 @@ class InitCommand:
     def _setup_python_project(self) -> None:
         """Setup generic Python project."""
         main_file = self.options.project_path / "main.py"
+
+        context = {
+            "project_name": self.options.name,
+            "framework": self.options.framework,
+            "year": self._get_current_year(),
+        }
         if not main_file.exists():
             self.template_manager.create_from_template(
                 "python/main.py.template",
                 main_file,
-                {"project_name": self.options.name},
+                context=context,
                 overwrite=self.options.force,
             )
 
@@ -592,33 +772,56 @@ class InitCommand:
     def _setup_flask_project(self) -> None:
         """Setup Flask project."""
         app_file = self.options.project_path / "app.py"
+
+        context = {
+            "project_name": self.options.name,
+            "author": os.getenv("USER", "Unknown"),
+            "framework": self.options.framework,
+            "year": self._get_current_year(),
+            "host": "0.0.0.0",
+            "port": "5000",
+            "python_version": self.options.python_executable or "3.8+",
+        }
         if not app_file.exists():
             self.template_manager.create_from_template(
                 "flask/app.py.template",
                 app_file,
-                {"project_name": self.options.name},
+                context=context,
                 overwrite=self.options.force,
             )
 
     def _setup_fastapi_project(self) -> None:
         """Setup FastAPI project."""
         main_file = self.options.project_path / "main.py"
+        context = {
+            "project_name": self.options.name,
+            "framework": self.options.framework,
+            "year": self._get_current_year(),
+            "python_version": self.options.python_executable or "3.8+",
+            "host": "0.0.0.0",
+            "port": "8000",
+        }
         if not main_file.exists():
             self.template_manager.create_from_template(
                 "fastapi/main.py.template",
                 main_file,
-                {"project_name": self.options.name},
+                context=context,
                 overwrite=self.options.force,
             )
 
     def _setup_streamlit_project(self) -> None:
         """Setup Streamlit project."""
         app_file = self.options.project_path / "app.py"
+        context = {
+            "project_name": self.options.name,
+            "framework": self.options.framework,
+            "year": self._get_current_year(),
+        }
         if not app_file.exists():
             self.template_manager.create_from_template(
                 "streamlit/app.py.template",
                 app_file,
-                {"project_name": self.options.name},
+                context=context,
                 overwrite=self.options.force,
             )
 
@@ -642,7 +845,7 @@ class InitCommand:
             "django": ["Django>=4.0", "python-dotenv"],
             "flask": ["Flask>=2.0", "python-dotenv"],
             "fastapi": ["fastapi>=0.75", "uvicorn[standard]", "python-dotenv"],
-            "streamlit": ["streamlit>=1.0", "python-dotenv"],
+            "streamlit": ["streamlit~=1.30.0", "python-dotenv"],
             "tornado": ["tornado>=6.1", "python-dotenv"],
             "sanic": ["sanic>=21.12", "python-dotenv"],
             "python": ["python-dotenv"],

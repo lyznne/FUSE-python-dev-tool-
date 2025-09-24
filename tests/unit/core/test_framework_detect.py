@@ -104,9 +104,7 @@ def test_framework_detector_multiple_indicators(tmp_path):
 
     assert framework is not None
     assert framework.name == "fastapi"
-    assert (
-        framework.confidence >= 0.5
-    )
+    assert framework.confidence >= 0.5
     # Should have high confidence with multiple indicators
 
 

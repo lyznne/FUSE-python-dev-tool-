@@ -3,6 +3,12 @@
 # Framework: $framework
 # Generated: $year
 
+
+# settings
+debug = ${debug}
+testing = ${testing}
+
+
 [project]
 name = "$project_name"
 framework = "$framework"
@@ -24,7 +30,7 @@ auto_open = true
 
 [deployment]
 # platforms = ["docker", "railway", "render"] # Add your deployment platforms here
-platforms = ["docker", "railway", "render"]
+
 
 [deployment.docker]
 enabled = true
@@ -32,10 +38,11 @@ port = $port
 image_name = "${project_name}-app"
 
 [logging]
-level = "${logging[level]}"
-format = "${logging[format]}"
-file = "${logging[dir]}/app.log"
-dir = "${logging[dir]}"
+level = "${logging_level}"
+format = "${logging_format}"
+file = "${logging_dir}/app.log"
+dir = "${logging_dir}"
+
 
 [commands]
 ${commands}
@@ -51,14 +58,10 @@ $environment
 # Example: ["fuse-database", "fuse-auth"]
 $plugins
 
-[debug]
-enabled = true
-profiling = false
+# [debug]
+# enabled = true
+# profiling = false
 
-[testing]
-framework = "pytest"
-coverage = true
-
-[settings]
-debug = ${debug}
-testing = $testing
+# testing
+# framework = "pytest"
+# coverage = true

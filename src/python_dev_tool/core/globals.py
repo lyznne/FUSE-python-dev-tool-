@@ -4,31 +4,31 @@ Core - Global Variables
 """
 
 #  server variables
-APP_HOST           =   "127.0.0.1",
-APP_PORT           =   8000,
-APP_UI_PORT        =  8001,
-APP_DEBUG          =  True,
-APP_RELOAD         =  True,
-APP_OPEN_BROWSER   =  True,
-APP_LOG_LEVEL      =  "info",
-APP_UI_PORT        =  8001,
-APP_WORKERS        =  1,
-APP_TIMEOUT        =  30,
+APP_HOST = ("127.0.0.1",)
+APP_PORT = (8000,)
+APP_UI_PORT = (8001,)
+APP_DEBUG = (True,)
+APP_RELOAD = (True,)
+APP_OPEN_BROWSER = (True,)
+APP_LOG_LEVEL = ("info",)
+APP_UI_PORT = (8001,)
+APP_WORKERS = (1,)
+APP_TIMEOUT = (30,)
 
 # logging config    variables
-LOG_LEVEL          =  "info",
-LOG_FORMAT         =  "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-LOG_FILE_ENABLED   =  True,
-LOG_FILE_PATH      =  "logs/fusetool.log",
-LOG_MAX_FILE_SIZE  =  10 * 1024 * 1024,  # 10MB
-LOG_BACKUP_COUNT   =  5,
+LOG_LEVEL = ("info",)
+LOG_FORMAT = ("%(asctime)s - %(name)s - %(levelname)s - %(message)s",)
+LOG_FILE_ENABLED = (True,)
+LOG_FILE_PATH = ("logs/fusetool.log",)
+LOG_MAX_FILE_SIZE = (10 * 1024 * 1024,)  # 10MB
+LOG_BACKUP_COUNT = (5,)
 
 
 # Config -  project settings\
-PROJECT_NAME       =  "my project",
-PROJECT_ROOT       =  ".",
-FRAMEWORK          =  None,
-PYTHON_VERSION     =  "3.13",
+PROJECT_NAME = ("my project",)
+PROJECT_ROOT = (".",)
+FRAMEWORK = (None,)
+PYTHON_VERSION = ("3.13",)
 
 
 # suppported frameworks
@@ -39,7 +39,7 @@ SUPPORTED_FRAMEWORKS = ["django", "flask", "fastapi", "streamlit", "tornado", "s
 
 
 # config files
-FUSE_CONFIG_FILE   =  ".devtool/config.toml"
+FUSE_CONFIG_FILE = ".fuse/config.toml"
 
 
 # Framework signatures for detection
@@ -160,17 +160,16 @@ VERSION_PATTERNS = {
     "streamlit": r"streamlit[=<>~!]*\s*([\d.]+)",
     "tornado": r"tornado[=<>~!]*\s*([\d.]+)",
     "sanic": r"sanic[=<>~!]*\s*([\d.]+)",
-
 }
 
 
 REQUIREMENTS_FILES = [
-        "requirements.txt",
-        "pyproject.toml",
-        "setup.py",
-        "pipfile",
-        "environment.yml",
-        "poetry.lock",
+    "requirements.txt",
+    "pyproject.toml",
+    "setup.py",
+    "pipfile",
+    "environment.yml",
+    "poetry.lock",
 ]
 
 FRAMEWORK_PATTERNS = {

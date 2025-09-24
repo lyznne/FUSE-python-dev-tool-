@@ -4,12 +4,12 @@ System Utils - System-related utilities for FUSE
 Dependency Utils - Dependency management utilities for FUSE
 """
 
-
 import platform
 from typing import Any, Dict, List
 import socket
 import sys
 import os
+
 
 class SystemUtils:
     """Utility for retrieving system information."""
@@ -24,27 +24,28 @@ class SystemUtils:
         """
 
         return {
-        "os": platform.system(),  # e.g., 'Linux'
-        "platform": platform.platform(),  # Full platform string
-        "platform-release": platform.release(),
-        "platform-version": platform.version(),
-        "architecture": platform.machine(),
-        "hostname": socket.gethostname(),
-        "machine": platform.machine(),
-        "processor": platform.processor(),
-        "python-version": platform.python_version(),
-        "python-compiler": platform.python_compiler(),
-        "python-executable": sys.executable,
-        "python-implementation": platform.python_implementation(),
-        "python-build": platform.python_build()[0],
-        "python-build-time": platform.python_build()[1],
-        "python-path": os.getenv("PYTHONPATH", ""),
-        "python-virtualenv": os.getenv("VIRTUAL_ENV", "None"),
-        "python-virtualenv-prefix": sys.prefix,
-        "python-virtualenv-site-packages": next(
-            p for p in sys.path if "site-packages" in p
-        ),
-    }
+            "os": platform.system(),  # e.g., 'Linux'
+            "platform": platform.platform(),  # Full platform string
+            "platform-release": platform.release(),
+            "platform-version": platform.version(),
+            "architecture": platform.machine(),
+            "hostname": socket.gethostname(),
+            "machine": platform.machine(),
+            "processor": platform.processor(),
+            "python-version": platform.python_version(),
+            "python-compiler": platform.python_compiler(),
+            "python-executable": sys.executable,
+            "python-implementation": platform.python_implementation(),
+            "python-build": platform.python_build()[0],
+            "python-build-time": platform.python_build()[1],
+            "python-path": os.getenv("PYTHONPATH", ""),
+            "python-virtualenv": os.getenv("VIRTUAL_ENV", "None"),
+            "python-virtualenv-prefix": sys.prefix,
+            "python-virtualenv-site-packages": next(
+                p for p in sys.path if "site-packages" in p
+            ),
+        }
+
 
 class DependencyUtils:
     """Dependency management utilities."""

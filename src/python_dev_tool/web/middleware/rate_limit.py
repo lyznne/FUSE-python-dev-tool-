@@ -2,7 +2,13 @@
 FUSE - (python dev tool) - Web App
 Rate Limit Middleware
 """
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
-def RateLimitMiddleware(app):
+class RateLimitMiddleware(BaseHTTPMiddleware):
     """Rate limit middleware"""
-    pass
+    async def dispatch(self, request: Request, call_next):
+        """Dispatch request to the next middleware or endpoint"""
+        # TODO: Implement rate limit middleware
+        return await call_next(request)
