@@ -1,0 +1,54 @@
+"""
+$project_name - Flask Application
+created by $author in $year
+"""
+import os
+from flask import Flask, jsonify, render_template
+from dotenv import load_dotenv
+
+
+
+# Load environment variables
+load_dotenv()
+
+# Create Flask app
+app = Flask(__name__)
+
+# Configuration
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['DEBUG'] = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
+
+@app.route('/')
+def index():
+    """Home page."""
+    return jsonify({
+        "message": f"Hello from $project_name!",
+        "framework": "$framework",
+        "status": "running"
+    })
+
+@app.route('/health')
+def health():
+    """Health check endpoint."""
+    return jsonify({
+        "status": "healthy",
+        "service": "$project_name",
+        "framework": "$framework"
+    })
+
+@app.route('/api/info')
+def info():
+    """API info endpoint."""
+    return jsonify({
+        "project": "$project_name",
+        "framework": "$framework_title",
+        "python_version": "$python_version",
+        "author": "$author"
+    })
+
+if __name__ == '__main__':
+    app.run(
+        debug=app.config['DEBUG'],
+        host='$host',
+        port=int(os.getenv('PORT', $port))
+    )

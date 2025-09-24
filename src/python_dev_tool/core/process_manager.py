@@ -4,18 +4,17 @@ process_manager.py - Process Manager (Process lifecycle management)
 """
 
 # sys imports
-from dataclasses import dataclass
-import datetime
-from enum import Enum
-from typing import Optional, Dict, List, Any
-import psutil
 import asyncio
+import datetime
 import re
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
+from typing import Dict, List, Optional
+
+import psutil
 
 # 3rd party imports
-
-
 # local imports
 from python_dev_tool.core.events import EventBus
 
@@ -67,14 +66,13 @@ class ProcessManager:
 
         try:
             # start process
-            process  = await asyncio.create_subprocess_exec(
+            process = await asyncio.create_subprocess_exec(
                 *command.split(),
                 cwd=cwd,
                 env=env,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 stdin=asyncio.subprocess.PIPE,
-
             )
 
             # create process info
@@ -87,7 +85,6 @@ class ProcessManager:
                 port=self._extract_port(command),
                 cpu_percent=0.0,
                 memory_mb=0.0,
-
             )
 
             self.processes[name] = process_info
@@ -100,13 +97,13 @@ class ProcessManager:
             asyncio.create_task(self._stream_logs(name, process))
 
             self.event_bus.publish(
-                'process started',
+                "process started",
                 {
-                    'name': name,
-                    'pid': process_info.pid,
-                    'command': command,
-                    'port': process_info.port,
-                }
+                    "name": name,
+                    "pid": process_info.pid,
+                    "command": command,
+                    "port": process_info.port,
+                },
             )
 
             return process_info
@@ -126,7 +123,7 @@ class ProcessManager:
         if name not in self.processes:
             return False
 
-        process_info  =  self.processes[name]
+        process_info = self.processes[name]
         if process_info.status != ProcessStatus.RUNNING:
             return False
 
@@ -149,19 +146,22 @@ class ProcessManager:
             process_info.stopped_at = datetime.datetime.now()
 
             self.event_bus.publish(
-                'process stopped',
+                "process stopped",
                 {
-                    'name': name,
-                    'pid': process_info.pid,
-                }
+                    "name": name,
+                    "pid": process_info.pid,
+                },
             )
             return True
         except Exception as e:
-            self.event_bus.publish('process.error', {
-                'name': name,
-                # 'pid': process_info.pid,
-                'error': str(e),
-            })
+            self.event_bus.publish(
+                "process.error",
+                {
+                    "name": name,
+                    # 'pid': process_info.pid,
+                    "error": str(e),
+                },
+            )
 
     async def _monitor_processes(self) -> None:
         """Monitor processes and update status."""
@@ -169,7 +169,7 @@ class ProcessManager:
             for name, process_info in self.processes.items():
                 if process_info.pid and process_info.status == ProcessStatus.RUNNING:
                     try:
-                        process  = psutil.Process(process_info.pid)
+                        process = psutil.Process(process_info.pid)
 
                         # update metrics
                         process_info.cpu_percent = process.cpu_percent()
@@ -178,20 +178,25 @@ class ProcessManager:
                         # check if process is still alive
                         if not process.is_running():
                             process_info.status = ProcessStatus.CRASHED
-                            self.event_bus.publish('process.craashed', {
-                                'name': name,
-                                'pid': process_info.pid,
-                            })
+                            self.event_bus.publish(
+                                "process.craashed",
+                                {
+                                    "name": name,
+                                    "pid": process_info.pid,
+                                },
+                            )
 
                     except psutil.NoSuchProcess:
                         process_info.status = ProcessStatus.CRASHED
-                        self.event_bus.publish('process.craashed', {
-                            'name': name,
-                            'pid': process_info.pid,
-                        })
+                        self.event_bus.publish(
+                            "process.craashed",
+                            {
+                                "name": name,
+                                "pid": process_info.pid,
+                            },
+                        )
 
             await asyncio.sleep(1)
-
 
     def _extract_port(self, command: str) -> Optional[int]:
         """Extract port from command string."""

@@ -7,24 +7,23 @@ import asyncio
 import logging
 import os
 import shutil
-from pathlib import Path
-from typing import Dict, List, Optional, Any
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from dataclasses import dataclass, asdict
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import toml
-from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
-from python_dev_tool.core.framework_detector import FrameworkDetector
 from python_dev_tool.core.config import Config
 from python_dev_tool.core.events import EventEmitter
 from python_dev_tool.core.exceptions import ProjectError
-from python_dev_tool.web.models.project import Project, ProjectStatus
+from python_dev_tool.core.framework_detector import FrameworkDetector
 from python_dev_tool.utils.file_utils import FileUtils
 from python_dev_tool.utils.validation import ValidationUtils
-
+from python_dev_tool.web.models.project import Project, ProjectStatus
 
 
 class ProjectEventType(Enum):
@@ -95,11 +94,17 @@ class ProjectService:
         self.projects: Dict[str, Project] = {}
         self.watchers: Dict[str, Observer] = {}
         self.metrics: Dict[str, ProjectMetrics] = {}
-        self.config = Config()
+        self.config = None
         self.event_emitter = EventEmitter()
         self.framework_detector = FrameworkDetector()
         self.file_utils = FileUtils()
         self.validation_utils = ValidationUtils()
+
+    @property
+    def config(self):
+        if self._config is None:
+            self._config = Config()
+        return self._config
 
     async def initialize(self):
         """Initialize the project service."""
@@ -384,7 +389,7 @@ class ProjectService:
         if not project:
             raise ProjectError(f"Project not found: {project_id}")
 
-        config_path = Path(project.path) / ".devtool" / "config.toml"
+        config_path = Path(project.path) / ".fuse" / "config.toml"
 
         if not config_path.exists():
             return {}
@@ -406,7 +411,7 @@ class ProjectService:
             raise ProjectError(f"Project not found: {project_id}")
 
         try:
-            config_path = Path(project.path) / ".devtool" / "config.toml"
+            config_path = Path(project.path) / ".fuse" / "config.toml"
             config_path.parent.mkdir(exist_ok=True)
 
             with open(config_path, "w") as f:
@@ -480,7 +485,7 @@ class ProjectService:
 
     async def _create_project_config(self, project: Project):
         """Create project configuration file."""
-        config_dir = Path(project.path) / ".devtool"
+        config_dir = Path(project.path) / ".fuse"
         config_dir.mkdir(exist_ok=True)
 
         config_path = config_dir / "config.toml"

@@ -7,7 +7,7 @@ name = "fuse"
 version = "0.0.1"
 description = "A comprehensive development tool for Python applications with live server, monitoring, and deployment capabilities"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = { file = "LICENSE.md" }
 authors = [{ name = "Enos Lyznne", email = "emuthiani26@gmail.com" }]
 maintainers = [{ name = "Enos Lyznne", email = "emuthiani26@gmail.com" }]
 keywords = [
@@ -31,9 +31,8 @@ classifiers = [
     "Framework :: FastAPI",
     "Framework :: Flask",
     "Framework :: Pyramid",
-    "Framework :: Tornado",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: AGPL  License",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -70,7 +69,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-     "pytest>=7.0.0",
+    "ruff>=0.0.0",
+    "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-asyncio>=0.21.0",
     "mypy>=1.0.0",
@@ -104,9 +104,11 @@ Issues = "https://github.com/lyznne/python-dev-tool/issues"
 Changelog = "https://github.com/lyznne/python-dev-tool/blob/main/CHANGELOG.md"
 
 [project.scripts]
-python-dev-tool = "python_dev_tool.cli.main:main"
-fuse = "python_dev_tool.cli.main:main"
-devtool = "python_dev_tool.cli.main:main"
+python-dev-tool = "python_dev_tool.cli.fuse:app"
+fuse = "python_dev_tool.cli.fuse:app"
+devtool = "python_dev_tool.cli.fuse:app"
+FUSE  =  "python_dev_tool.cli.fuse:app"
+
 
 [project.entry-points."python_dev_tool.frameworks"]
 django = "python_dev_tool.frameworks.django:DjangoFramework"
@@ -127,7 +129,8 @@ path = "src/python_dev_tool/__init__.py"
 include = [
     "/src",
     "/README.md",
-    "/LICENSE",
+    "/LICENSE.md",
+    "/COMMERCIAL_LICENSE.md",
     "/pyproject.toml",
     "/CHANGELOG.md",
     "/docs",

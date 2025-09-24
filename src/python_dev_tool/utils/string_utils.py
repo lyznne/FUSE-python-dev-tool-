@@ -6,4 +6,5 @@ Encryption Utils - Utilities for encryption and decryption operations.
 
 class StringUtils:
     """String utilities."""
+
     pass

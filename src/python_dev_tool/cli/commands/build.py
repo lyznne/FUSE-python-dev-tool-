@@ -5,9 +5,9 @@ CLI - Build Command
 
 # sys imports
 import shutil
-from pathlib import Path
-from typing import Dict, Any, Optional
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 # 3rd party imports
 from rich.console import Console
@@ -16,6 +16,7 @@ from rich.console import Console
 from python_dev_tool.core.exceptions import DevToolError
 from python_dev_tool.core.framework_detector import FrameworkDetector
 from python_dev_tool.utils.file_utils import FileUtils
+
 
 @dataclass
 class BuildOptions:
@@ -26,6 +27,7 @@ class BuildOptions:
     output_dir: Path = None
     clean: bool = False
     optimize: bool = True
+
 
 class BuildCommand:
     """Command for building projects."""
@@ -100,8 +102,8 @@ class BuildCommand:
 
     def _detect_framework(self):
         """Detect project framework."""
-        detector = FrameworkDetector(self.options.project_path)
-        return detector.detect_framework()
+        detector = FrameworkDetector()
+        return detector.detect_framework(self.options.project_path)
 
     def _run_framework_build(self, framework_info, output_path: Path) -> None:
         """Run framework-specific build steps."""

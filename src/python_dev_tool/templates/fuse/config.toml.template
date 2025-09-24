@@ -1,0 +1,67 @@
+# FUSE Configuration File
+# Project: $project_name
+# Framework: $framework
+# Generated: $year
+
+
+# settings
+debug = ${debug}
+testing = ${testing}
+
+
+[project]
+name = "$project_name"
+framework = "$framework"
+framework_version = "${framework_version}"
+version = "${version}"
+python_version = "$python_version"
+
+
+[server]
+host = "$host"
+port = $port
+timeout = 30
+auto_reload = true
+
+[dashboard]
+port = 8001
+theme = "dark"
+auto_open = true
+
+[deployment]
+# platforms = ["docker", "railway", "render"] # Add your deployment platforms here
+
+
+[deployment.docker]
+enabled = true
+port = $port
+image_name = "${project_name}-app"
+
+[logging]
+level = "${logging_level}"
+format = "${logging_format}"
+file = "${logging_dir}/app.log"
+dir = "${logging_dir}"
+
+
+[commands]
+${commands}
+
+
+[environment]
+# Add your environment variables here
+# Example: API_KEY = "your-api-key"
+$environment
+
+[plugins]
+# Add FUSE plugins here
+# Example: ["fuse-database", "fuse-auth"]
+$plugins
+
+# [debug]
+# enabled = true
+# profiling = false
+
+# testing
+# framework = "pytest"
+# coverage = true

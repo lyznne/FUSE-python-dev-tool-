@@ -2,6 +2,14 @@
 TODO.md
 ROADMAP.md
 TECH.md
+text.txt
+PROJECT_SCAFFOLDING.md
+
+
+# === fuse ===
+#
+# This file is gitignored to prevent the FUSE tool from tracking its own configuration files.
+
 
 # === Python ===
 __pycache__/
@@ -100,3 +108,9 @@ test-output/
 
 # === EditorConfig Backup ===
 .editorconfig.sav
+
+
+
+# === fuse
+.fuse/
+

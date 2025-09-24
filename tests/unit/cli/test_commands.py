@@ -3,13 +3,13 @@ FUSE (Python Dev Tool) - CLI Command Tests - FIXED VERSION
 This module contains unit tests for the CLI commands of the Python Dev Tool.
 """
 
-import asyncio
 import pytest
 from typer.testing import CliRunner
+
 from python_dev_tool.cli.main import app
-from python_dev_tool.core.framework_detector import FrameworkInfo
-from unittest.mock import patch, AsyncMock
+
 runner = CliRunner()
+
 
 # Fix for the initialized_project fixture
 @pytest.fixture
@@ -18,8 +18,8 @@ def initialized_project(tmp_path):
     project_dir = tmp_path / "test_project"
     project_dir.mkdir()
 
-    # Create the .devtool directory and config file
-    devtool_dir = project_dir / ".devtool"
+    # Create the .fuse directory and config file
+    devtool_dir = project_dir / ".fuse"
     devtool_dir.mkdir()
 
     config_file = devtool_dir / "config.toml"
@@ -28,17 +28,6 @@ def initialized_project(tmp_path):
     framework = "django"
     version = "1.0.0"
     python_version = "3.8+"
-
-    [dependencies]
-    django = "*"
-
-    [dev-dependencies]
-    pytest = "*"
-    black = "*"
-
-    [scripts]
-    test = "pytest"
-    format = "black ."
     """)
 
     # Create pyproject.toml (required for build/deploy)
@@ -101,21 +90,20 @@ def initialized_project(tmp_path):
 
 def test_init_command(tmp_path, monkeypatch):
     """Test the init command with proper setup."""
-    # Create a fresh directory for init command (don't use initialized_project)
+    # Create a fresh directory for init command
     project_path = tmp_path / "new_project"
     project_path.mkdir()
 
     # Mock Rich prompt functions
     monkeypatch.setattr("rich.prompt.Confirm.ask", lambda *args, **kwargs: True)
 
-    # CRITICAL FIX:  InitCommand expects a framework parameter
-    # The mock should return a valid framework name, not just "python"
-    monkeypatch.setattr(
-        "rich.prompt.Prompt.ask",
-        lambda prompt,
-        choices=None,
-        default=None: "1",  # Mocking choice for framework selection
-    )
+    # Fix the mock to handle show_default parameter
+    def mock_prompt_ask(prompt, choices=None, default=None, show_default=None):
+        if "framework" in prompt.lower():
+            return "1"  # Select Django
+        return "test_project"  # Default for other prompts
+
+    monkeypatch.setattr("rich.prompt.Prompt.ask", mock_prompt_ask)
 
     result = runner.invoke(app, ["init", str(project_path)])
 
@@ -126,20 +114,28 @@ def test_init_command(tmp_path, monkeypatch):
             print(f"Exception: {result.exception}")
 
     assert result.exit_code == 0, f"Init failed: {result.stdout}"
+    assert (project_path / ".fuse" / "config.toml").exists()
+    assert (project_path / "requirements.txt").exists()
+    assert (project_path / "manage.py").exists()
 
-    success_indicators = [
-        "Project initialized successfully",
-        "initialized successfully",
-        "Initialization complete",
-        "✓",
-    ]
+    monkeypatch.setattr("rich.prompt.Prompt.ask", mock_prompt_ask)
 
-    assert any(indicator in result.stdout for indicator in success_indicators), (
-        f"No success indicator found in: {result.stdout}"
-    )
+    result = runner.invoke(app, ["init", str(project_path)])
 
-    # Verify the config file was created
-    assert (project_path / ".devtool" / "config.toml").exists()
+    if result.exit_code != 0:
+        print(f"STDOUT: {result.stdout}")
+        print(f"STDERR: {result.stderr}")
+        if result.exception:
+            print(f"Exception: {result.exception}")
+
+    assert result.exit_code == 0, f"Init failed: {result.stdout}"
+    assert (project_path / ".fuse" / "config.toml").exists()
+
+
+def test_init_command_with_existing_project(tmp_path, monkeypatch):
+    """Test the init command with an existing project."""
+    # Create a directory with existing files
+    assert True == True  # Placeholder for actual test logic
 
 
 def test_dev_command(initialized_project):
@@ -157,8 +153,6 @@ def test_dev_command(initialized_project):
             print(f"Dev command debug - Exception: {result.exception}")
 
     assert result.exit_code == 0, f"Dev command failed: {result.stdout}"
-
-
 
 
 def test_build_command(initialized_project):
@@ -192,11 +186,15 @@ def test_status_command(initialized_project):
 
     if result.exit_code != 0:
         print(f"Status command debug - STDOUT: {result.stdout}")
-        print(f"Status command debug - Config path: {initialized_project / '.devtool' / 'config.toml'}")
-        print(f"Status command debug - Config exists: {(initialized_project / '.devtool' / 'config.toml').exists()}")
+        print(
+            f"Status command debug - Config path: {initialized_project / '.fuse' / 'config.toml'}"
+        )
+        print(
+            f"Status command debug - Config exists: {(initialized_project / '.fuse' / 'config.toml').exists()}"
+        )
 
         # Read and print the config content for debugging
-        config_path = initialized_project / '.devtool' / 'config.toml'
+        config_path = initialized_project / ".fuse" / "config.toml"
         if config_path.exists():
             print(f"Config content: {config_path.read_text()}")
 

@@ -4,47 +4,42 @@ Core - Global Variables
 """
 
 #  server variables
-APP_HOST           =   "127.0.0.1",
-APP_PORT           =   8000,
-APP_UI_PORT        =  8001,
-APP_DEBUG          =  True,
-APP_RELOAD         =  True,
-APP_OPEN_BROWSER   =  True,
-APP_LOG_LEVEL      =  "info",
-APP_UI_PORT        =  8001,
-APP_WORKERS        =  1,
-APP_TIMEOUT        =  30,
+APP_HOST = ("127.0.0.1",)
+APP_PORT = (8000,)
+APP_UI_PORT = (8001,)
+APP_DEBUG = (True,)
+APP_RELOAD = (True,)
+APP_OPEN_BROWSER = (True,)
+APP_LOG_LEVEL = ("info",)
+APP_UI_PORT = (8001,)
+APP_WORKERS = (1,)
+APP_TIMEOUT = (30,)
 
 # logging config    variables
-LOG_LEVEL          =  "info",
-LOG_FORMAT         =  "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-LOG_FILE_ENABLED   =  True,
-LOG_FILE_PATH      =  "logs/fusetool.log",
-LOG_MAX_FILE_SIZE  =  10 * 1024 * 1024,  # 10MB
-LOG_BACKUP_COUNT   =  5,
+LOG_LEVEL = ("info",)
+LOG_FORMAT = ("%(asctime)s - %(name)s - %(levelname)s - %(message)s",)
+LOG_FILE_ENABLED = (True,)
+LOG_FILE_PATH = ("logs/fusetool.log",)
+LOG_MAX_FILE_SIZE = (10 * 1024 * 1024,)  # 10MB
+LOG_BACKUP_COUNT = (5,)
 
 
 # Config -  project settings\
-PROJECT_NAME       =  "my project",
-PROJECT_ROOT       =  ".",
-FRAMEWORK          =  None,
-PYTHON_VERSION     =  "3.13",
+PROJECT_NAME = ("my project",)
+PROJECT_ROOT = (".",)
+FRAMEWORK = (None,)
+PYTHON_VERSION = ("3.13",)
 
 
 # suppported frameworks
-SUPPORTED_FRAMEWORKS = [
-    "django",
-    "flask",
-    "fastapi",
-    "streamlit",
-]
+SUPPORTED_FRAMEWORKS = ["django", "flask", "fastapi", "streamlit", "tornado", "sanic"]
 
 
 # config file names
 
 
 # config files
-FUSE_CONFIG_FILE   =  ".devtool/config.toml"
+FUSE_CONFIG_FILE = ".fuse/config.toml"
 
 
 # Framework signatures for detection
@@ -165,15 +160,45 @@ VERSION_PATTERNS = {
     "streamlit": r"streamlit[=<>~!]*\s*([\d.]+)",
     "tornado": r"tornado[=<>~!]*\s*([\d.]+)",
     "sanic": r"sanic[=<>~!]*\s*([\d.]+)",
-
 }
 
 
 REQUIREMENTS_FILES = [
-        "requirements.txt",
-        "pyproject.toml",
-        "setup.py",
-        "pipfile",
-        "environment.yml",
-        "poetry.lock",
+    "requirements.txt",
+    "pyproject.toml",
+    "setup.py",
+    "pipfile",
+    "environment.yml",
+    "poetry.lock",
 ]
+
+FRAMEWORK_PATTERNS = {
+    "django": {
+        "files": ["manage.py", "wsgi.py", "asgi.py"],
+        "directories": ["templates", "static", "migrations"],
+        "config_files": ["settings.py", "urls.py"],
+        "imports": ["django"],
+        "patterns": [r"from\s+django", r"import\s+django"],
+    },
+    "flask": {
+        "files": ["app.py", "main.py"],
+        "directories": ["templates", "static"],
+        "config_files": ["config.py"],
+        "imports": ["flask"],
+        "patterns": [r"from\s+flask", r"Flask\(__name__\)"],
+    },
+    "fastapi": {
+        "files": ["main.py", "app.py"],
+        "directories": ["app", "routers"],
+        "config_files": [],
+        "imports": ["fastapi"],
+        "patterns": [r"from\s+fastapi", r"FastAPI\("],
+    },
+    "streamlit": {
+        "files": ["*.py"],
+        "directories": ["pages", ".streamlit"],
+        "config_files": ["config.toml"],
+        "imports": ["streamlit"],
+        "patterns": [r"import\s+streamlit", r"st\."],
+    },
+}

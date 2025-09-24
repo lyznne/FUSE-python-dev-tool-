@@ -2,14 +2,21 @@
 FUSE - (python dev tool) - Web App
 api/websocket.py - WebSocket API
 """
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from typing import Dict, Set
 import json
 import logging
 from datetime import datetime
 
-from python_dev_tool.web.services.project_service import ProjectService, get_project_service
-from python_dev_tool.web.services.process_service import ProcessService, get_process_service
+from python_dev_tool.web.services.project_service import (
+    ProjectService,
+    get_project_service,
+)
+from python_dev_tool.web.services.process_service import (
+    ProcessService,
+    get_process_service,
+)
 from python_dev_tool.web.services.log_service import LogService, get_log_service
 
 
@@ -315,6 +322,7 @@ async def handle_process_action(
             },
             client_id,
         )
+
 
 async def handle_logs_request(message: dict, client_id: str, log_service: LogService):
     """Handle logs request messages"""

@@ -1,6 +1,6 @@
 """
 FUSE - (python dev tool) - Core Logger
-logger.py - Logger Infrastructure
+logger.py - Logger Infrastructure with Event Loop Handling
 """
 
 import asyncio
@@ -104,6 +104,11 @@ class LogBuffer:
             # Notify subscribers
             await self._notify_subscribers(entry)
 
+    def add_entry_sync(self, entry: LogEntry):
+        """Add log entry to buffer synchronously (for when no event loop is running)"""
+        self.buffer.append(entry)
+        # Note: Can't notify subscribers in sync mode
+
     async def get_recent(self, count: int = 100) -> List[LogEntry]:
         """Get recent log entries"""
         async with self.lock:
@@ -159,7 +164,7 @@ class LogManager:
         self.log_level = getattr(logging, log_level.upper())
 
         # Create logs directory
-        self.log_dir = Path(f".fuse/logs/{project_id}")
+        self.log_dir = Path(f".fuse/logs")
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
         # Log files
@@ -169,11 +174,11 @@ class LogManager:
         # Initialize buffer
         self.buffer = LogBuffer()
 
+        # Setup standard logging first
+        self._setup_standard_logging()
+
         # Setup structured logging
         self._setup_structured_logging()
-
-        # Setup standard logging
-        self._setup_standard_logging()
 
         # Logger instances
         self.loggers: Dict[str, logging.Logger] = {}
@@ -192,6 +197,7 @@ class LogManager:
                 structlog.processors.format_exc_info,
                 structlog.processors.UnicodeDecoder(),
                 self._structlog_processor,
+                structlog.processors.JSONRenderer(),
             ],
             context_class=dict,
             logger_factory=structlog.stdlib.LoggerFactory(),
@@ -251,8 +257,15 @@ class LogManager:
             exception=event_dict.get("exception"),
         )
 
-        # Add to buffer asynchronously
-        asyncio.create_task(self.buffer.add_entry(entry))
+        # Try to add to buffer asynchronously if there's a running event loop
+        try:
+            # Check if there's a running event loop
+            loop = asyncio.get_running_loop()
+            # If we get here, there's a running loop, so we can create a task
+            asyncio.create_task(self.buffer.add_entry(entry))
+        except RuntimeError:
+            # No running event loop, add synchronously
+            self.buffer.add_entry_sync(entry)
 
         return event_dict
 
@@ -397,23 +410,20 @@ class DevToolLogger:
     """Simplified logger interface for the dev tool"""
 
     def __init__(self, project_id: str = "default", name: str = "main"):
-        self.manager = get_log_manager(project_id)
-        self.logger = self.manager.get_structured_logger(name)
+        # Used standard library logger instead of structlog for simplicity
+        self.logger = get_log_manager(project_id).get_logger(name)
 
     def debug(self, message: str, **kwargs):
-        self.logger.debug(message, **kwargs)
+        self.logger.debug(message, extra=kwargs)
 
     def info(self, message: str, **kwargs):
-        self.logger.info(message, **kwargs)
+        self.logger.info(message, extra=kwargs)
 
     def warning(self, message: str, **kwargs):
-        self.logger.warning(message, **kwargs)
+        self.logger.warning(message, extra=kwargs)
 
     def error(self, message: str, **kwargs):
-        self.logger.error(message, **kwargs)
+        self.logger.error(message, extra=kwargs)
 
     def critical(self, message: str, **kwargs):
-        self.logger.critical(message, **kwargs)
-
-
-
+        self.logger.critical(message, extra=kwargs)

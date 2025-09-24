@@ -91,7 +91,6 @@ class ValidationUtils:
         except Exception as e:
             raise DevToolError(f"Invalid project path '{project_path}': {e}")
 
-
     @staticmethod
     def _validate_name(name: str, max_length: int = 50) -> str:
         """
