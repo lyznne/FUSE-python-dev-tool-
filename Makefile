@@ -72,7 +72,8 @@ REMOTE_CLI := git@github.com:$(GITHUB_ORG)/fuse-cli.git
 REMOTE_UI := git@github.com:$(GITHUB_ORG)/fuse-ui.git
 REMOTE_DOCS := git@github.com:$(GITHUB_ORG)/fuse-docs.git
 REMOTE_PLUGINS := git@github.com:$(GITHUB_ORG)/fuse-plugins.git
-REMOTE_TEMPLATES := git@github.com:$(GITHUB_ORG)/fuse-templates.gi
+REMOTE_TEMPLATES := git@github.com:$(GITHUB_ORG)/fuse-templates.git
+REMOTE_COMMUNITY := git@github.com:$(GITHUB_ORG)/fuse-community.git
 
 
 
@@ -106,6 +107,7 @@ help:
 	@echo -e "  $(YELLOW)make git-push-docs$(RESET)            $(EMOJI_PUBLISH) Pushing documentation"
 	@echo -e "  $(YELLOW)make git-push-plugins$(RESET)         $(EMOJI_BUILD) Pushing FUSE Plugins"
 	@echo -e "  $(YELLOW)make git-push-templates$(RESET)       $(EMOJI_BUILD) Pushing templates code"
+	@echo -e "  $(YELLOW)make git-push-community$(RESET)       $(EMOJI_BUILD) Pushing FUSE Community code"
 	@echo -e "  $(YELLOW)make git-push-all$(RESET)             $(EMOJI_ROCKET) Pushing to all repositories"
 	@echo -e "  $(YELLOW)make git-pull-all$(RESET)             $(EMOJI_WATCH) Pulling from all repositories"
 	@echo -e "  $(YELLOW)make git-status-all$(RESET)           $(EMOJI_FAST) Check Git status of all repositories"
@@ -202,6 +204,7 @@ git-setup-remotes:
 	@git remote add docs $(REMOTE_DOCS) 2>/dev/null || true
 	@git remote add plugins $(REMOTE_PLUGINS) 2>/dev/null || true
 	@git remote add templates $(REMOTE_TEMPLATES) 2>/dev/null || true
+	@git remote add community $(REMOTE_COMMUNITY) 2>/dev/null || true
 	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Git remotes configured!$(RESET)"
 
 .PHONY: git-push-core
@@ -211,6 +214,13 @@ git-push-core:
 	@git subtree push --prefix=src/python_dev_tool/frameworks core main
 	@git subtree push --prefix=src/python_dev_tool/monitoring core main
 	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Core pushed successfully!$(RESET)"
+
+.PHONY: git-push-community
+git-push-community:
+	@echo -e "$(GREEN)$(EMOJI_ROCKET) Pushing community module...$(RESET)"
+	@git subtree push --prefix=src/python_dev_tool/community community main
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Community pushed successfully!$(RESET)"
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Community pushed successfully!$(RESET)"
 
 .PHONY: git-push-cli
 git-push-cli:
