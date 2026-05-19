@@ -149,6 +149,8 @@ help:
 	@echo -e "  $(PURPLE)make deploy$(RESET)                    $(EMOJI_DEPLOY) Deploy to configured platform"
 	@echo -e "  $(BLUE)make docs$(RESET)                        $(EMOJI_DOCS) Serve documentation (default port 8000)"
 	@echo -e "  $(BLUE)make docs PORT=8080$(RESET)              $(EMOJI_DOCS) Serve docs on custom port"
+	@echo -e "  $(BLUE)make docs-build$(RESET)                  $(EMOJI_DOCS) Build static documentation site"
+	@echo -e "  $(BLUE)make docs-publish$(RESET)                $(EMOJI_DOCS) Publish static documentation site"
 
 	@echo -e "$(BOLD)$(EMERALD)[ Benchmarks & Maintenance ]$(RESET)"
 	@echo -e "  $(SLATE)make benchmark$(RESET)                  $(EMOJI_BENCHMARK) Run performance benchmarks"
@@ -163,7 +165,43 @@ help:
 	@echo -e "$(SLATE)Run $(BOLD)make <command>$(RESET)$(SLATE) to execute any command$(RESET)"
 
 
+## help release
+# -------------------------------------
+#  Help for Release Commands
+# -------------------------------------
 
+.PHONY: help-release
+help-release:
+	@echo -e ""
+	@echo -e "$(BOLD)$(EMOJI_ROCKET) FUSE Release Management$(RESET)"
+	@echo -e "$(SLATE)────────────────────────────────────────────────────$(RESET)"
+	@echo -e ""
+	@echo -e "$(BOLD)$(EMERALD)[ Build Platform Packages ]$(RESET)"
+	@echo -e "  $(GREEN)make build-arch$(RESET)           Build Arch Linux package"
+	@echo -e "  $(GREEN)make build-deb$(RESET)            Build Debian/Ubuntu package"
+	@echo -e "  $(GREEN)make build-rpm$(RESET)            Build RPM package"
+	@echo -e "  $(GREEN)make build-windows$(RESET)        Build Windows package"
+	@echo -e "  $(GREEN)make build-macos$(RESET)          Build macOS package"
+	@echo -e "  $(GREEN)make build-all-platforms$(RESET)  Build for all platforms"
+	@echo -e ""
+	@echo -e "$(BOLD)$(EMERALD)[ Publish & Update ]$(RESET)"
+	@echo -e "  $(ORANGE)make publish-arch$(RESET)         Publish Arch Linux package"
+	@echo -e "  $(ORANGE)make publish-deb$(RESET)          Publish Debian/Ubuntu package"
+	@echo -e "  $(ORANGE)make publish-rpm$(RESET)          Publish RPM package"
+	@echo -e "  $(ORANGE)make publish-pypi$(RESET)         Publish to PyPI"
+	@echo -e "  $(ORANGE)make publish-test-pypi$(RESET)    Publish to Test PyPI"
+	@echo -e "  $(ORANGE)make update-homebrew$(RESET)      Update Homebrew formula"
+	@echo -e ""
+	@echo -e "$(BOLD)$(EMERALD)[ Release Workflow ]$(RESET)"
+	@echo -e "  $(PURPLE)make release-check$(RESET)       Run pre-release checks"
+	@echo -e "  $(PURPLE)make release-tag$(RESET)         Create release tag"
+	@echo -e "  $(PURPLE)make release-notes$(RESET)       Generate release notes"
+	@echo -e "  $(PURPLE)make release-github$(RESET)      Create GitHub release"
+	@echo -e "  $(PURPLE)make release-full$(RESET)        Build all packages and release"
+	@echo -e "  $(PURPLE)make release-prepare$(RESET)     Prepare a new release"
+	@echo -e "  $(PURPLE)make release-build$(RESET)       Build release packages"
+	@echo -e "  $(PURPLE)make release-publish$(RESET)     Publish Release"
+	@echo -e ""
 
 # -------------------------------------
 #  Git Repository Management
@@ -306,8 +344,8 @@ release-publish:
 	@python scripts/publish_release.py
 	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Release published!$(RESET)"
 
-.PHONY: release-full
-release-full: release-prepare release-build release-publish
+.PHONY: release-complete
+release-complete: release-prepare release-build release-publish
 	@echo -e "$(GREEN)$(EMOJI_ROCKET) Full release process completed!$(RESET)"
 
 
@@ -558,6 +596,18 @@ docs:
 	@echo -e "$(BLUE)$(EMOJI_DOCS) Serving documentation on port $(PORT)...$(RESET)"
 	@mkdocs serve --dev-addr=localhost:$(PORT)
 
+.PHONY: docs-build
+docs-build:
+	@echo -e "$(BLUE)$(EMOJI_DOCS) Building documentation...$(RESET)"
+	@mkdocs build
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Documentation built!$(RESET)"
+
+.PHONY: docs-publish
+docs-publish:
+	@echo -e "$(BLUE)$(EMOJI_DOCS) Publishing documentation...$(RESET)"
+	@mkdocs gh-deploy --force --remote-name docs
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Documentation published!$(RESET)"
+
 # -------------------------------------
 #   Benchmarks & Cleanup
 # -------------------------------------
@@ -623,3 +673,196 @@ script:
 	@echo -e "$(PURPLE)$(EMOJI_CLI) Running script: $(SCRIPT_FILE)$(RESET)"
 	@${SCRIPT_FILE}$(SCRIPT_FILE)
 	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Script completed successfully!$(RESET)"
+
+
+
+# -------------------------------------
+#  Platform-Specific Package Building
+# -------------------------------------
+
+.PHONY: build-arch
+build-arch:
+	@echo -e "$(ORANGE)$(EMOJI_BUILD) Building Arch Linux package...$(RESET)"
+	@bash $(SCRIPT_FILE)build_arch.sh $(shell hatch version)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Arch package built!$(RESET)"
+
+.PHONY: build-deb
+build-deb:
+	@echo -e "$(ORANGE)$(EMOJI_BUILD) Building Debian/Ubuntu package...$(RESET)"
+	@bash $(SCRIPT_FILE)build_deb.sh $(shell hatch version)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Debian package built!$(RESET)"
+
+.PHONY: build-rpm
+build-rpm:
+	@echo -e "$(ORANGE)$(EMOJI_BUILD) Building RPM package...$(RESET)"
+	@bash $(SCRIPT_FILE)build_rpm.sh $(shell hatch version)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) RPM package built!$(RESET)"
+
+.PHONY: build-windows
+build-windows:
+	@echo -e "$(ORANGE)$(EMOJI_BUILD) Building Windows package...$(RESET)"
+	@bash $(SCRIPT_FILE)build_windows.sh $(shell hatch version)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Windows package built!$(RESET)"
+
+.PHONY: build-macos
+build-macos:
+	@echo -e "$(ORANGE)$(EMOJI_BUILD) Building macOS package...$(RESET)"
+	@bash $(SCRIPT_FILE)build_macos.sh $(shell hatch version)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) macOS package built!$(RESET)"
+
+.PHONY: build-all-platforms
+build-all-platforms:
+	@echo -e "$(ORANGE)$(EMOJI_ROCKET) Building packages for all platforms...$(RESET)"
+	@python scripts/build_release.py --platform all
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) All platform packages built!$(RESET)"
+
+# -------------------------------------
+#  Package Manager Updates
+# -------------------------------------
+
+.PHONY: update-homebrew
+update-homebrew:
+	@echo -e "$(BLUE)$(EMOJI_PUBLISH) Updating Homebrew formula...$(RESET)"
+	@cd ../fuse-homebrew && \
+	git pull && \
+	sed -i '' 's/version ".*"/version "$(shell hatch version)"/' Formula/fuse.rb && \
+	git add Formula/fuse.rb && \
+	git commit -m "Update to version $(shell hatch version)" && \
+	git push
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Homebrew formula updated!$(RESET)"
+
+.PHONY: update-aur
+update-aur:
+	@echo -e "$(BLUE)$(EMOJI_PUBLISH) Updating AUR package...$(RESET)"
+	@cd packaging/build/arch && \
+	makepkg --printsrcinfo > .SRCINFO && \
+	git add PKGBUILD .SRCINFO && \
+	git commit -m "Update to version $(shell hatch version)" && \
+	git push
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) AUR package updated!$(RESET)"
+
+.PHONY: publish-pypi
+publish-pypi:
+	@echo -e "$(ORANGE)$(EMOJI_PUBLISH) Publishing to PyPI...$(RESET)"
+	@python -m build
+	@twine upload dist/*
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Published to PyPI!$(RESET)"
+
+.PHONY: publish-test-pypi
+publish-test-pypi:
+	@echo -e "$(ORANGE)$(EMOJI_PUBLISH) Publishing to Test PyPI...$(RESET)"
+	@python -m build
+	@twine upload --repository testpypi dist/*
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Published to Test PyPI!$(RESET)"
+
+# -------------------------------------
+#  Release Workflow
+# -------------------------------------
+
+.PHONY: release-check
+release-check:
+	@echo -e "$(BLUE)$(EMOJI_TEST) Running pre-release checks...$(RESET)"
+	@echo -e "$(YELLOW)Checking tests...$(RESET)"
+	@make test || (echo -e "$(RED)$(EMOJI_ERROR) Tests failed!$(RESET)" && exit 1)
+	@echo -e "$(YELLOW)Checking linting...$(RESET)"
+	@make lint || (echo -e "$(RED)$(EMOJI_ERROR) Linting failed!$(RESET)" && exit 1)
+	@echo -e "$(YELLOW)Checking git status...$(RESET)"
+	@git diff --exit-code || (echo -e "$(RED)$(EMOJI_ERROR) Uncommitted changes!$(RESET)" && exit 1)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) All pre-release checks passed!$(RESET)"
+
+.PHONY: release-tag
+release-tag:
+	@echo -e "$(BLUE)$(EMOJI_VERSION) Creating release tag...$(RESET)"
+	@git tag -a v$(shell hatch version) -m "Release version $(shell hatch version)"
+	@git push origin v$(shell hatch version)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Tag created and pushed!$(RESET)"
+
+.PHONY: release-notes
+release-notes:
+	@echo -e "$(BLUE)$(EMOJI_DOCS) Generating release notes...$(RESET)"
+	@python scripts/generate_release_notes.py $(shell hatch version)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Release notes generated!$(RESET)"
+
+.PHONY: release-github
+release-github:
+	@echo -e "$(BLUE)$(EMOJI_ROCKET) Creating GitHub release...$(RESET)"
+	@gh release create v$(shell hatch version) \
+		--title "FUSE v$(shell hatch version)" \
+		--notes-file releases/RELEASE_NOTES.md \
+		releases/*
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) GitHub release created!$(RESET)"
+
+.PHONY: release-full
+release-full: release-check version-patch release-tag build-all-platforms publish-pypi release-github
+	@echo -e "$(GREEN)$(EMOJI_ROCKET) Full release completed!$(RESET)"
+	@echo -e "$(BLUE)Version: $(shell hatch version)$(RESET)"
+	@echo -e "$(BLUE)Released to:$(RESET)"
+	@echo -e "  - PyPI: https://pypi.org/project/fuse-dev-tool/$(shell hatch version)/"
+	@echo -e "  - GitHub: https://github.com/fuse-dev-tool/fuse-core/releases/tag/v$(shell hatch version)"
+
+# -------------------------------------
+#  Distribution Verification
+# -------------------------------------
+
+.PHONY: verify-packages
+verify-packages:
+	@echo -e "$(BLUE)$(EMOJI_TEST) Verifying release packages...$(RESET)"
+	@cd releases && sha256sum -c SHA256SUMS
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) All packages verified!$(RESET)"
+
+.PHONY: test-install-local
+test-install-local:
+	@echo -e "$(BLUE)$(EMOJI_TEST) Testing local installation...$(RESET)"
+	@pip install -e .
+	@fuse --version
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Local installation works!$(RESET)"
+
+.PHONY: test-install-pypi
+test-install-pypi:
+	@echo -e "$(BLUE)$(EMOJI_TEST) Testing PyPI installation...$(RESET)"
+	@python -m venv test_env
+	@./test_env/bin/pip install fuse-dev-tool
+	@./test_env/bin/fuse --version
+	@rm -rf test_env
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) PyPI installation works!$(RESET)"
+
+# -------------------------------------
+#  Repository Management
+# -------------------------------------
+
+.PHONY: sync-all-repos
+sync-all-repos: git-commit-current git-push-all
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) All repositories synchronized!$(RESET)"
+
+.PHONY: repo-status
+repo-status:
+	@echo -e "$(BLUE)$(EMOJI_NETWORK) Repository status:$(RESET)"
+	@echo -e "$(YELLOW)Main repository:$(RESET)"
+	@git status -s
+	@echo -e "\n$(YELLOW)Remote repositories:$(RESET)"
+	@for remote in core cli ui docs plugins templates; do \
+		echo -e "$(CYAN)$$remote:$(RESET) $$(git ls-remote --get-url $$remote 2>/dev/null || echo 'Not configured')"; \
+	done
+
+.PHONY: create-release-branch
+create-release-branch:
+	@echo -e "$(BLUE)$(EMOJI_ROCKET) Creating release branch...$(RESET)"
+	@git checkout -b release/v$(shell hatch version)
+	@git push -u origin release/v$(shell hatch version)
+	@echo -e "$(GREEN)$(EMOJI_SUCCESS) Release branch created!$(RESET)"
+
+
+# -------------------------------------
+#  Community Management
+# -------------------------------------
+
+.PHONY: announce-release
+announce-release:
+	@echo -e "$(BLUE)$(EMOJI_ROCKET) Announcing release...$(RESET)"
+	@echo "Please manually announce the release on:"
+	@echo "  - Discord: #announcements channel"
+	@echo "  - Twitter/X: @fuse_dev_tool"
+	@echo "  - Reddit: r/Python"
+	@echo "  - Dev.to: FUSE Team blog"
+	@echo ""
+	@echo "Announcement template saved to: releases/ANNOUNCEMENT.md"

@@ -1,6 +1,6 @@
 site_name: FUSE - Python Dev Tool
 site_description: Live Python Dev Server + UI + Logs + Framework-aware CLI
-site_url: https://github.com/fuse-dev-tool
+site_url: https://fuse-dev-tool.github.io/fuse-docs/
 site_author: lyznne
 
 repo_url: https://github.com/fuse-dev-tool
@@ -58,6 +58,7 @@ markdown_extensions:
       permalink: true
   - tables
   - attr_list
+  - md_in_html
   - def_list
   - footnotes
   - pymdownx.superfences

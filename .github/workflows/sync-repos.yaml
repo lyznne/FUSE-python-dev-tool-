@@ -1,0 +1,33 @@
+name: Sync Repositories
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.REPO_SYNC_TOKEN }}
+
+    - name: Setup Git
+      run: |
+        git config --global user.name "FUSE Bot"
+        git config --global user.email "bot@fuse-dev-tool.github.io"
+
+    - name: Sync Core Repository
+      run: |
+        git subtree push --prefix=src/python_dev_tool/core https://github.com/fuse-dev-tool/fuse-core.git main
+
+    - name: Sync CLI Repository
+      run: |
+        git subtree push --prefix=src/python_dev_tool/cli https://github.com/fuse-dev-tool/fuse-cli.git main
+
+    - name: Sync UI Repository
+      run: |
+        git subtree push --prefix=src/python_dev_tool/web https://github.com/fuse-dev-tool/fuse-ui.git main
